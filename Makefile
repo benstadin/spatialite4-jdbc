@@ -23,7 +23,21 @@ SPATIALITE_UNPACKED:=$(TARGET)/spatialite-unpack.log
 SPATIALITE_DIR=$(TARGET)/libspatialite-$(SPATIALITE_VERSION)
 SPATIALITE_LIB=$(SPATIALITE_DIR)/src/.libs/libspatialite.a
 
-SPATIALITE_STATIC_LIBS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a 
+ifeq ($(OS_NAME),Windows)
+	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
+    SPATIALITE_FLAGS = 
+else ifeq ($(OS_NAME),Linux)
+	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
+    SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a -lxml2  /opt/local/lib/libiconv.a -lz $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+else ifeq ($(OS_NAME),Mac)
+	ifeq ($(target),Mac-x86_64)
+    	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
+		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a -lxml2  /opt/local/lib/libiconv.a -lz $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+    else
+    	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no CC=clang CXX="clang++ -std=c++11 -stdlib=libc++"
+		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a -lxml2  /opt/local/lib/libiconv.a -lz $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a 
+    endif
+endif
 
 CFLAGS:= -I$(SQLITE_OUT) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
 
@@ -44,7 +58,7 @@ $(SPATIALITE_UNPACKED): $(SPATIALITE_ARCHIVE)
 	touch $@
 
 $(SPATIALITE_LIB): $(SPATIALITE_UNPACKED)
-	(cd $(SPATIALITE_DIR) && ./configure --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=yes)
+	(cd $(SPATIALITE_DIR) && ./configure $(SPATIALITE_CONFIG_FLAGS))
 	(cd $(SPATIALITE_DIR) && make)
 
 $(SQLITE_OUT)/org/sqlite/%.class: src/main/java/org/sqlite/%.java
@@ -63,16 +77,16 @@ clean: clean-native clean-java clean-tests
 
 $(SQLITE_OUT)/sqlite3.o : $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
 	@mkdir -p $(@D)
-	@mkdir -p $(SPATIALITE_DIR)/src/include/spatialite
-	cp $(SPATIALITE_DIR)/src/headers/*.h $(SPATIALITE_DIR)/src/include/spatialite
-	cp $(SPATIALITE_DIR)/config.h $(SQLITE_OUT)
+	#@mkdir -p $(SPATIALITE_DIR)/src/include/spatialite
+	#cp $(SPATIALITE_DIR)/src/headers/*.h $(SPATIALITE_DIR)/src/include/spatialite
+	#cp $(SPATIALITE_DIR)/config.h $(SQLITE_OUT)
 	perl -p -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
 	    $(SQLITE_AMAL_DIR)/sqlite3ext.h > $(SQLITE_OUT)/sqlite3ext.h
 # insert a code for loading extension functions
 	perl -p -e "s/^opendb_out:/  if(!db->mallocFailed && rc==SQLITE_OK){ rc = RegisterExtensionFunctions(db); }\nopendb_out:/;" \
 	    $(SQLITE_AMAL_DIR)/sqlite3.c > $(SQLITE_OUT)/sqlite3.c
 	cat src/main/ext/*.c >> $(SQLITE_OUT)/sqlite3.c
-	$(CC) -o $@ $(SPATIALITE_STATIC_LIBS) -c $(CFLAGS) \
+	$(CC) -o $@ -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_LOAD_EXTENSION=1 \
 	    -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
@@ -86,8 +100,8 @@ $(SQLITE_OUT)/sqlite3.o : $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
 
 $(SQLITE_OUT)/$(LIBNAME): $(SQLITE_OUT)/sqlite3.o $(SRC)/org/sqlite/core/NativeDB.c $(SQLITE_OUT)/NativeDB.h
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c -o $(SQLITE_OUT)/NativeDB.o $(SRC)/org/sqlite/core/NativeDB.c
-	$(CC) $(CFLAGS) -o $@ $(SQLITE_OUT)/*.o $(LINKFLAGS) 
+	$(CC) $(CFLAGS) -c -o $(SQLITE_OUT)/NativeDB.o $(SRC)/org/sqlite/core/NativeDB.c $(SPATIALITE_FLAGS) 
+	$(CC) $(CFLAGS) -o $@ $(SQLITE_OUT)/*.o $(SPATIALITE_FLAGS) $(LINKFLAGS)
 	$(STRIP) $@
 
 
@@ -131,6 +145,10 @@ package: $(NATIVE32_DLL) native
 
 clean-native:
 	rm -rf $(TARGET)/$(sqlite)-$(OS_NAME)*
+	rm -rf $(SQLITE_AMAL_DIR)
+	rm -f $(SQLITE_UNPACKED)
+	rm -rf $(SPATIALITE_DIR)
+	rm -f $(SPATIALITE_UNPACKED)
 
 clean-java:
 	rm -rf $(TARGET)/*classes

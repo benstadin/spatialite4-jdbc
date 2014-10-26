@@ -96,13 +96,13 @@ Mac-i386_LINKFLAGS := -dynamiclib
 Mac-i386_LIBNAME   := libsqlitejdbc.jnilib
 Mac-i386_SQLITE_FLAGS  := -DSQLITE_ENABLE_LOCKING_STYLE=0
 
-Mac-x86_64_CC        := gcc -arch $(OS_ARCH) 
+Mac-x86_64_CC        := clang -arch $(OS_ARCH) 
 Mac-x86_64_STRIP     := strip -x
 MAC_SDK := /Developer/SDKs/MacOSX10.7.sdk
 ifeq ($(wildcard MAC_SDK),)
 	MAC_SDK := /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk
 endif
-Mac-x86_64_CFLAGS    := -I$(MAC_JNI_HOME) -I$(MAC_LIBXML_INC) -O2 -fPIC -mmacosx-version-min=10.5 -fvisibility=hidden
+Mac-x86_64_CFLAGS    := -I$(MAC_JNI_HOME) -I$(MAC_LIBXML_INC) -O2 -fPIC -mmacosx-version-min=10.9 -fvisibility=hidden
 Mac-x86_64_LINKFLAGS := -dynamiclib 
 Mac-x86_64_LIBNAME   := libsqlitejdbc.jnilib
 Mac-x86_64_SQLITE_FLAGS  := 
