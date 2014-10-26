@@ -90,6 +90,9 @@ public final class NativeDB extends DB
     @Override
     public native synchronized int enable_load_extension(boolean enable);
 
+    @Override
+    public native synchronized int init_spatialite_ex(boolean verbose);
+    
     /**
      * @see org.sqlite.core.DB#interrupt()
      */

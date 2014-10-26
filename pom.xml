@@ -147,6 +147,28 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+        <id>spatialite</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <finalName>${project.artifactId}-spatialite</finalName>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
   </profiles>
   
   <dependencies>

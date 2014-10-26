@@ -121,6 +121,8 @@ public abstract class DB implements Codes
      */
     public abstract int enable_load_extension(boolean enable) throws SQLException;
 
+    public abstract int init_spatialite_ex(boolean verbose) throws SQLException;
+    
     /**
      * Executes an SQL statement using the process of compiling, evaluating, and destroying the
      * prepared statement object.

@@ -63,7 +63,7 @@ public abstract class CoreConnection {
         this.transactionMode = config.getTransactionMode();
         this.openModeFlags = config.getOpenModeFlags();
 
-        open(openModeFlags, config.busyTimeout);
+        open(openModeFlags, config);
 
         if (fileName.startsWith("file:") && !fileName.contains("cache="))
         {   // URI cache overrides flags
@@ -81,7 +81,7 @@ public abstract class CoreConnection {
      * @throws SQLException
      * @see <a href="http://www.sqlite.org/c3ref/c_open_autoproxy.html">http://www.sqlite.org/c3ref/c_open_autoproxy.html</a>
      */
-    private void open(int openModeFlags, int busyTimeout) throws SQLException {
+    private void open(int openModeFlags, SQLiteConfig config) throws SQLException {
         // check the path to the file exists
         if (!":memory:".equals(fileName) && !fileName.startsWith("file:") && !fileName.contains("mode=memory")) {
             if (fileName.startsWith(RESOURCE_NAME_PREFIX)) {
@@ -143,7 +143,10 @@ public abstract class CoreConnection {
         }
 
         db.open((SQLiteConnection)this, fileName, openModeFlags);
-        setBusyTimeout(busyTimeout);
+        if (config.isEnabledSpatiaLite()) {
+            db.init_spatialite_ex(false);
+        }
+        setBusyTimeout(config.busyTimeout);
     }
 
     /**

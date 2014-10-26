@@ -116,6 +116,7 @@ public class SQLiteConfig
         pragmaParams.remove(Pragma.OPEN_MODE.pragmaName);
         pragmaParams.remove(Pragma.SHARED_CACHE.pragmaName);
         pragmaParams.remove(Pragma.LOAD_EXTENSION.pragmaName);
+        pragmaParams.remove(Pragma.SPATIALITE.pragmaName);
         pragmaParams.remove(Pragma.DATE_PRECISION.pragmaName);
         pragmaParams.remove(Pragma.DATE_CLASS.pragmaName);
         pragmaParams.remove(Pragma.DATE_STRING_FORMAT.pragmaName);
@@ -192,6 +193,10 @@ public class SQLiteConfig
     public int getOpenModeFlags() {
         return openModeFlag;
     }
+    
+    public boolean isEnabledSpatiaLite() {
+        return getBoolean(Pragma.SPATIALITE, "false");
+    }
 
     /**
      * Sets a pragma's value.
@@ -243,6 +248,7 @@ public class SQLiteConfig
         OPEN_MODE("open_mode", "Database open-mode flag", null),
         SHARED_CACHE("shared_cache", "Enable SQLite Shared-Cache mode, native driver only", OnOff),
         LOAD_EXTENSION("enable_load_extension", "Enable SQLite load_extention() function, native driver only", OnOff),
+        SPATIALITE("enable_spatialite", "Enable SpatiaLite extension, native driver only", OnOff),
 
         // Pragmas that can be set after opening the database
         CACHE_SIZE("cache_size"),
@@ -336,6 +342,10 @@ public class SQLiteConfig
      */
     public void enableLoadExtension(boolean enable) {
         set(Pragma.LOAD_EXTENSION, enable);
+    }
+    
+    public void enableSpatiaLite(boolean enable) {
+        set(Pragma.SPATIALITE, enable);
     }
 
     /**

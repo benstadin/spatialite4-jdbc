@@ -19,11 +19,99 @@
 #include <assert.h>
 #include "NativeDB.h"
 #include "sqlite3.h"
+#include <stdio.h>
+
+//#include <spatialite/spatialite.h>
+
+void spatialite_cleanup_ex (const void *ptr);
+void *spatialite_alloc_connection (void);
+void spatialite_init_ex (sqlite3 * db_handle,
+                         const void *ptr, int verbose);
+
 
 static jclass dbclass = 0;
 static jclass  fclass = 0;
 static jclass  aclass = 0;
 static jclass pclass = 0;
+
+typedef struct SpatialiteCacheNode SpatialiteCacheNode_t;
+
+typedef struct SpatialiteCacheNode {
+    SpatialiteCacheNode_t *prev;
+    sqlite3 *handle;
+    void *spatialiteCache;
+    SpatialiteCacheNode_t *next;
+} SpatialiteCacheNode;
+
+typedef struct SpatialiteCachePool
+{
+    unsigned int length;
+    SpatialiteCacheNode_t *first;
+    SpatialiteCacheNode_t *last;
+} SpatialiteCachePool;
+
+static SpatialiteCachePool *spatialiteCachePool = 0;
+
+static SpatialiteCacheNode *lookupSpatialiteCacheForHandle(sqlite3 *handle)
+{
+    if (!spatialiteCachePool) {
+        return NULL;
+    }
+    
+    SpatialiteCacheNode *n = spatialiteCachePool->first;
+    while (n) {
+        if (n->handle == handle) {
+            break;
+        }
+        n = n->next;
+    }
+    return n;
+}
+
+static SpatialiteCacheNode* allocSpatialiteCacheForHandle(sqlite3 *handle)
+{
+    SpatialiteCacheNode *n = malloc(sizeof(SpatialiteCacheNode));
+    if (n) {
+        n->spatialiteCache = spatialite_alloc_connection();
+        n->handle = handle;
+        n->next = NULL;
+        if (!spatialiteCachePool) {
+            spatialiteCachePool = malloc(sizeof(SpatialiteCachePool));
+            n->prev = NULL;
+            spatialiteCachePool->first = n;
+            spatialiteCachePool->last = n;
+            spatialiteCachePool->length = 1;
+        } else {
+            n->prev = spatialiteCachePool->last;
+            spatialiteCachePool->last->next = n;
+            spatialiteCachePool->last = n;
+            spatialiteCachePool->length++;
+        }
+    }
+    return n;
+}
+
+static void clearSpatialiteCacheForHandle(sqlite3 *handle)
+{
+    SpatialiteCacheNode *n = lookupSpatialiteCacheForHandle(handle);
+    if (!n) return;
+    
+    if (n->prev) {
+        n->prev->next = n->next;
+    } else {
+        spatialiteCachePool->first = n->next;
+    }
+    if (n->next) {
+        n->next->prev = n->prev;
+    } else {
+        spatialiteCachePool->last = n->prev;
+    }
+    spatialiteCachePool->length--;
+    if (n->spatialiteCache) {
+        spatialite_cleanup_ex(n->spatialiteCache);
+    }
+    free(n);
+}
 
 static void * toref(jlong value)
 {
@@ -334,7 +422,6 @@ JNIEXPORT void JNICALL Java_org_sqlite_core_NativeDB__1open(
 
     if (db) {
         throwexmsg(env, "DB already open");
-        sqlite3_close(db);
         return;
     }
 
@@ -350,12 +437,84 @@ JNIEXPORT void JNICALL Java_org_sqlite_core_NativeDB__1open(
     sethandle(env, this, db);
 }
 
+JNIEXPORT jint JNICALL Java_org_sqlite_core_NativeDB_init_1spatialite_1ex(
+        JNIEnv *env, jobject this, jboolean verbose)
+{
+    sqlite3 *handle = gethandle(env, this);
+    SpatialiteCacheNode *n = allocSpatialiteCacheForHandle(handle);
+    spatialite_init_ex(handle, n->spatialiteCache, verbose ? 1 : 0);
+    return 1;
+}
+
 JNIEXPORT void JNICALL Java_org_sqlite_core_NativeDB__1close(
         JNIEnv *env, jobject this)
 {
-    if (sqlite3_close(gethandle(env, this)) != SQLITE_OK)
-        throwex(env, this);
-    sethandle(env, this, 0);
+    sqlite3 *handle = gethandle(env, this);
+    int err = sqlite3_close(handle);
+    if (err == SQLITE_OK) {
+        clearSpatialiteCacheForHandle(gethandle(env, this));
+        sethandle(env, this, 0);
+    }
+    else {
+        // Wait while busy for some attempts, and close any prepared statements
+        int retry = 0;
+        int didFinalizeOpenStatements = 0;
+        int numberOfRetries = 0;
+        int busyRetryTimeout = 100;
+        int shouldFinalizeOpenStatements = 1;
+        do
+        {
+            retry   = 0;
+            err     = sqlite3_close(handle);
+            // The db is busy or locked, or there are unfinalized prepared statements
+            if (SQLITE_BUSY == err || SQLITE_LOCKED == err)
+            {
+                retry = 1;
+                sqlite3_sleep(100);
+                
+                if (busyRetryTimeout && (numberOfRetries++ > busyRetryTimeout))
+                {
+                    throwexmsg(env, "SQLite database busy or locked, tried 100 times but still unable to close");
+                    return;
+                }
+                if (shouldFinalizeOpenStatements)
+                {
+                    shouldFinalizeOpenStatements = 0;
+                    sqlite3_stmt *pStmt;
+                    while ((pStmt = sqlite3_next_stmt(handle, 0x00)) != 0)
+                    {
+                        didFinalizeOpenStatements = 1;
+                        printf("Warning: Closing leaked statement for SQL: %s \n", sqlite3_sql(pStmt));
+                        err = sqlite3_finalize(pStmt);
+                        if (SQLITE_BUSY == err || SQLITE_LOCKED == err)
+                        {
+                            // Something interferred again - let's do another round
+                            shouldFinalizeOpenStatements = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Any other irrecoverable error occurred (quite rare event)
+            else if (SQLITE_OK != err)
+            {
+                char str[256];
+                sprintf(str, "Unhandled SQLite error %d occurred while trying to close database", err);
+                throwexmsg(env, str);
+                return;
+            }
+        }
+        while (retry);
+        
+        if (didFinalizeOpenStatements) {
+            throwexmsg(env, "Database was closed while there were open SQLite3 statements. All statements have been \
+                       finalized and the db was closed successfully. But you should fix your code to finalize these statements, \
+                       crashes and data loss are likely otherwise. See above which SQL statements are affected. ");
+        }
+        
+        clearSpatialiteCacheForHandle(gethandle(env, this));
+        sethandle(env, this, 0);
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_sqlite_core_NativeDB_interrupt(JNIEnv *env, jobject this)
