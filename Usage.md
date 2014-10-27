@@ -3,12 +3,12 @@
 Here is an example to establishing a connection to a database file `C:\work\mydatabase.db` (in Windows)
 
 ```java
-Connection connection = DriverManager.getConnection("jdbc:sqlite:C:/work/mydatabase.db");
+Connection connection = DriverManager.getConnection("jdbc.spatialite4:C:/work/mydatabase.db");
 ```
 
 Opening a UNIX (Linux, Mac OS X, etc.) file `/home/leo/work/mydatabase.db`
 ```java
-Connection connection = DriverManager.getConnection("jdbc:sqlite:/home/leo/work/mydatabase.db");
+Connection connection = DriverManager.getConnection("jdbc.spatialite4:/home/leo/work/mydatabase.db");
 ```
 
 ## How to Use Memory Databases ##
@@ -17,12 +17,12 @@ SQLite supports on-memory database management, which does not create any databas
 
 
 ```java
-Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
+Connection connection = DriverManager.getConnection("jdbc.spatialite4::memory:");
 ```
 
 And also, you can create memory database as follows:
 ```java
-Connection connection = DriverManager.getConnection("jdbc:sqlite:");
+Connection connection = DriverManager.getConnection("jdbc.spatialite4:");
 ```
 
 ## How to use Online Backup and Restore Feature ##
@@ -33,7 +33,7 @@ Take a backup of the whole database to `backup.db` file:
 ```java
 
 // Create a memory database
-Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+Connection conn = DriverManager.getConnection("jdbc.spatialite4:");
 Statement stmt = conn.createStatement();
 // Do some updates
 stmt.executeUpdate("create table sample(id, name)");
@@ -43,7 +43,7 @@ stmt.executeUpdate("insert into sample values(2, \"yui\")");
 stmt.executeUpdate("backup to backup.db");
 Restore the database from a backup file:
 // Create a memory database
-Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+Connection conn = DriverManager.getConnection("jdbc.spatialite4:");
 // Restore the database from a backup file
 Statement stat = conn.createStatement();
 stat.executeUpdate("restore from backup.db");
@@ -62,7 +62,7 @@ stat.executeUpdate("restore from backup.db");
 
 To load db files that can be found from the class loader (e.g., db 
 files inside a jar file in the classpath), 
-use `jdbc:sqlite::resource:` prefix. 
+use `jdbc.spatialite4::resource:` prefix. 
 
 For example, here is an example to access an SQLite DB file, `sample.db` 
 in a Java package `org.yourdomain`: 
@@ -70,7 +70,7 @@ in a Java package `org.yourdomain`:
 
 ```java
 
-Connection conn = DriverManager.getConnection("jdbc:sqlite::resource:org/yourdomain/sample.db"); 
+Connection conn = DriverManager.getConnection("jdbc.spatialite4::resource:org/yourdomain/sample.db"); 
 
 ```
 
@@ -79,7 +79,7 @@ In addition, external DB resources can be used as follows:
 
 ```java
 
-Connection conn = DriverManager.getConnection("jdbc:sqlite::resource:http://www.xerial.org/svn/project/XerialJ/trunk/sqlite-jdbc/src/test/java/org/sqlite/sample.db"); 
+Connection conn = DriverManager.getConnection("jdbc.spatialite4::resource:http://www.xerial.org/svn/project/XerialJ/trunk/sqlite-jdbc/src/test/java/org/sqlite/sample.db"); 
 
 ```
 
@@ -89,7 +89,7 @@ use the [JAR URL](http://java.sun.com/j2se/1.5.0/docs/api/java/net/JarURLConnect
 
 ```java
 
-Connection conn = DriverManager.getConnection("jdbc:sqlite::resource:jar:http://www.xerial.org/svn/project/XerialJ/trunk/sqlite-jdbc/src/test/resources/testdb.jar!/sample.db"); 
+Connection conn = DriverManager.getConnection("jdbc.spatialite4::resource:jar:http://www.xerial.org/svn/project/XerialJ/trunk/sqlite-jdbc/src/test/resources/testdb.jar!/sample.db"); 
 
 ```
 
@@ -105,5 +105,5 @@ SQLiteConfig config = new SQLiteConfig();
 config.setSharedCache(true);
 config.recursiveTriggers(true);
 // ... other configuration can be set via SQLiteConfig object
-Connection conn = DriverManager.getConnection("jdbc:sqlite:sample.db", config.toProperties());
+Connection conn = DriverManager.getConnection("jdbc.spatialite4:sample.db", config.toProperties());
 ```
