@@ -142,7 +142,7 @@ package: $(NATIVE32_DLL) native
 	DYLD_LIBRARY_PATH=$(SPATIAL_LIB_PATH) $(MVN) -Djava.library.path=$(SPATIAL_LIB_PATH) -P spatialite package
 
 clean-native:
-	rm -rf $(TARGET)/$(sqlite)-$(OS_NAME)*
+	rm -rf $(OUT_DIR)
 	rm -rf $(SQLITE_AMAL_DIR)
 	rm -f $(SQLITE_UNPACKED)
 	rm -rf $(SPATIALITE_DIR)
