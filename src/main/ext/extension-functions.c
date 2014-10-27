@@ -17,16 +17,24 @@ The string functions ltrim, rtrim, trim, replace are included in
 recent versions of SQLite and so by default do not build.
 
 Compilation instructions:
- Compile this C source file into a dynamic library as follows:
- Linux:
-   gcc -fPIC -lm -shared extension-functions.c -o libsqlitefunctions.so
- Mac OS X:
-   gcc -fno-common -dynamiclib extension-functions.c -o libsqlitefunctions.dylib
- (You may need to add flags
-  -I /opt/local/include/ -L/opt/local/lib -lsqlite3
-  if your sqlite3 is installed from Mac ports, or
-  -I /sw/include/ -L/sw/lib -lsqlite3
-  if installed with Fink.)
+Compile this C source file into a dynamic library as follows:
+* Linux:
+gcc -fPIC -lm -shared extension-functions.c -o libsqlitefunctions.so
+* Mac OS X:
+gcc -fno-common -dynamiclib extension-functions.c -o libsqlitefunctions.dylib
+(You may need to add flags
+-I /opt/local/include/ -L/opt/local/lib -lsqlite3
+if your sqlite3 is installed from Mac ports, or
+-I /sw/include/ -L/sw/lib -lsqlite3
+if installed with Fink.)
+* Windows:
+1. Install MinGW (http://www.mingw.org/) and you will get the gcc
+(gnu compiler collection)
+2. add the path to your path variable (isn't done during the
+installation!)
+3. compile:
+gcc -shared -I "path" -o libsqlitefunctions.so extension-functions.c
+(path = path of sqlite3ext.h; i.e. C:\programs\sqlite)
 
 Usage instructions for applications calling the sqlite3 API functions:
   In your application, call sqlite3_enable_load_extension(db,1) to
@@ -64,6 +72,8 @@ the HAVE_TRIM #define.
 Liam Healy
 
 History:
+2010-01-06 Correct check for argc in squareFunc, and add Windows
+compilation instructions.
 2009-06-24 Correct check for argc in properFunc
 2008-09-14 Add check that memory was actually allocated after
 sqlite3_malloc or sqlite3StrDup, call sqlite3_result_error_nomem if
@@ -493,7 +503,7 @@ static void piFunc(sqlite3_context *context, int argc, sqlite3_value **argv){
 static void squareFunc(sqlite3_context *context, int argc, sqlite3_value **argv){
   i64 iVal = 0;
   double rVal = 0.0;
-  assert( argc==2 );
+  assert( argc==1 );
   switch( sqlite3_value_type(argv[0]) ){
     case SQLITE_INTEGER: {
       iVal = sqlite3_value_int64(argv[0]);
