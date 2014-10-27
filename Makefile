@@ -29,14 +29,14 @@ ifeq ($(OS_NAME),Windows)
     SPATIALITE_FLAGS = 
 else ifeq ($(OS_NAME),Linux)
 	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-    SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a -lxml2  /opt/local/lib/libiconv.a -lz $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+    SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
 else ifeq ($(OS_NAME),Mac)
 	ifeq ($(target),Mac-x86_64)
     	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a -lxml2  /opt/local/lib/libiconv.a -lz $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
     else
     	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no CC=clang CXX="clang++ -std=c++11 -stdlib=libc++"
-		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a -lxml2  /opt/local/lib/libiconv.a -lz $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a 
+		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a  /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a 
     endif
 endif
 
