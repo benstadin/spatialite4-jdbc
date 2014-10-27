@@ -4,7 +4,7 @@ include Makefile.common
 
 RESOURCE_DIR = src/main/resources
 
-.phony: all package win32 mac32 linux32 native deploy
+.phony: all package win32 mac32 mac64 linux32 native deploy
 
 all: package
 
@@ -13,11 +13,12 @@ deploy:
 
 MVN:=mvn
 SRC:=src/main/java
-SQLITE_OUT:=$(TARGET)/$(sqlite)-$(OS_NAME)-$(OS_ARCH)
+
+OUT_DIR:=$(TARGET)/spatialite4-$(OS_NAME)-$(OS_ARCH)
 SQLITE_ARCHIVE:=$(TARGET)/$(sqlite)-amal.zip
 SQLITE_UNPACKED:=$(TARGET)/sqlite-unpack.log
 SQLITE_AMAL_DIR=$(TARGET)/$(SQLITE_AMAL_PREFIX)
-#SPATIALITE_OUT:=$(TARGET)/libspatialite-$(SPATIALITE_VERSION)-$(OS_NAME)-$(OS_ARCH)
+
 SPATIALITE_ARCHIVE:=$(TARGET)/libspatialite-$(SPATIALITE_VERSION).zip
 SPATIALITE_UNPACKED:=$(TARGET)/spatialite-unpack.log
 SPATIALITE_DIR=$(TARGET)/libspatialite-$(SPATIALITE_VERSION)
@@ -39,7 +40,7 @@ else ifeq ($(OS_NAME),Mac)
     endif
 endif
 
-CFLAGS:= -I$(SQLITE_OUT) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
+CFLAGS:= -I$(OUT_DIR) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
 
 $(SQLITE_ARCHIVE):
 	@mkdir -p $(@D)
@@ -61,31 +62,28 @@ $(SPATIALITE_LIB): $(SPATIALITE_UNPACKED)
 	(cd $(SPATIALITE_DIR) && ./configure $(SPATIALITE_CONFIG_FLAGS))
 	(cd $(SPATIALITE_DIR) && make)
 
-$(SQLITE_OUT)/org/sqlite/%.class: src/main/java/org/sqlite/%.java
+$(OUT_DIR)/org/spatialite4/%.class: src/main/java/org/spatialite4/%.java
 	@mkdir -p $(@D)
-	$(JAVAC) -source 1.5 -target 1.5 -sourcepath $(SRC) -d $(SQLITE_OUT) $<
+	$(JAVAC) -source 1.5 -target 1.5 -sourcepath $(SRC) -d $(OUT_DIR) $<
 
-jni-header: $(SQLITE_OUT)/NativeDB.h
+jni-header: $(OUT_DIR)/NativeDB.h
 
-$(SQLITE_OUT)/NativeDB.h: $(SQLITE_OUT)/org/sqlite/core/NativeDB.class
-	$(JAVAH) -classpath $(SQLITE_OUT) -jni -o $@ org.sqlite.core.NativeDB
+$(OUT_DIR)/NativeDB.h: $(OUT_DIR)/org/spatialite4/core/NativeDB.class
+	$(JAVAH) -classpath $(OUT_DIR) -jni -o $@ org.spatialite4.core.NativeDB
 
 test:
 	mvn test
 
 clean: clean-native clean-java clean-tests
 
-$(SQLITE_OUT)/sqlite3.o : $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
+$(OUT_DIR)/sqlite3.o : $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
 	@mkdir -p $(@D)
-	#@mkdir -p $(SPATIALITE_DIR)/src/include/spatialite
-	#cp $(SPATIALITE_DIR)/src/headers/*.h $(SPATIALITE_DIR)/src/include/spatialite
-	#cp $(SPATIALITE_DIR)/config.h $(SQLITE_OUT)
 	perl -p -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
-	    $(SQLITE_AMAL_DIR)/sqlite3ext.h > $(SQLITE_OUT)/sqlite3ext.h
+	    $(SQLITE_AMAL_DIR)/sqlite3ext.h > $(OUT_DIR)/sqlite3ext.h
 # insert a code for loading extension functions
 	perl -p -e "s/^opendb_out:/  if(!db->mallocFailed && rc==SQLITE_OK){ rc = RegisterExtensionFunctions(db); }\nopendb_out:/;" \
-	    $(SQLITE_AMAL_DIR)/sqlite3.c > $(SQLITE_OUT)/sqlite3.c
-	cat src/main/ext/*.c >> $(SQLITE_OUT)/sqlite3.c
+	    $(SQLITE_AMAL_DIR)/sqlite3.c > $(OUT_DIR)/sqlite3.c
+	cat src/main/ext/*.c >> $(OUT_DIR)/sqlite3.c
 	$(CC) -o $@ -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_LOAD_EXTENSION=1 \
 	    -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT \
@@ -96,22 +94,22 @@ $(SQLITE_OUT)/sqlite3.o : $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
 	    -DSQLITE_ENABLE_RTREE \
 	    -DSQLITE_ENABLE_STAT2 \
 	    $(SQLITE_FLAGS) \
-	    $(SQLITE_OUT)/sqlite3.c
+	    $(OUT_DIR)/sqlite3.c
 
-$(SQLITE_OUT)/$(LIBNAME): $(SQLITE_OUT)/sqlite3.o $(SRC)/org/sqlite/core/NativeDB.c $(SQLITE_OUT)/NativeDB.h
+$(OUT_DIR)/$(LIBNAME): $(OUT_DIR)/sqlite3.o $(SRC)/org/spatialite4/core/NativeDB.c $(OUT_DIR)/NativeDB.h
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c -o $(SQLITE_OUT)/NativeDB.o $(SRC)/org/sqlite/core/NativeDB.c $(SPATIALITE_FLAGS) 
-	$(CC) $(CFLAGS) -o $@ $(SQLITE_OUT)/*.o $(SPATIALITE_FLAGS) $(LINKFLAGS)
+	$(CC) $(CFLAGS) -c -o $(OUT_DIR)/NativeDB.o $(SRC)/org/spatialite4/core/NativeDB.c $(SPATIALITE_FLAGS) 
+	$(CC) $(CFLAGS) -o $@ $(OUT_DIR)/*.o $(SPATIALITE_FLAGS) $(LINKFLAGS)
 	$(STRIP) $@
 
 
-NATIVE_DIR=src/main/resources/org/sqlite/native/$(OS_NAME)/$(OS_ARCH)
-NATIVE_TARGET_DIR:=$(TARGET)/classes/org/sqlite/native/$(OS_NAME)/$(OS_ARCH)
+NATIVE_DIR=src/main/resources/org/spatialite4/native/$(OS_NAME)/$(OS_ARCH)
+NATIVE_TARGET_DIR:=$(TARGET)/classes/org/spatialite4/native/$(OS_NAME)/$(OS_ARCH)
 NATIVE_DLL:=$(NATIVE_DIR)/$(LIBNAME)
 
 native: $(SQLITE_UNPACKED) $(NATIVE_DLL)
 
-$(NATIVE_DLL): $(SQLITE_OUT)/$(LIBNAME)
+$(NATIVE_DLL): $(OUT_DIR)/$(LIBNAME)
 	@mkdir -p $(@D)
 	cp $< $@
 	@mkdir -p $(NATIVE_TARGET_DIR)
@@ -141,7 +139,7 @@ mac64:
 
 package: $(NATIVE32_DLL) native 
 	rm -rf target/dependency-maven-plugin-markers
-	DYLD_LIBRARY_PATH=$(SPATIAL_LIB_PATH) $(MVN) -Djava.library.path=$(SPATIAL_LIB_PATH) package
+	DYLD_LIBRARY_PATH=$(SPATIAL_LIB_PATH) $(MVN) -Djava.library.path=$(SPATIAL_LIB_PATH) -P spatialite package
 
 clean-native:
 	rm -rf $(TARGET)/$(sqlite)-$(OS_NAME)*
