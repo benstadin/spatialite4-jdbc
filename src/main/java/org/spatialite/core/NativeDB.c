@@ -50,7 +50,7 @@ typedef struct SpatialiteCachePool
     SpatialiteCacheNode_t *last;
 } SpatialiteCachePool;
 
-static SpatialiteCachePool *spatialiteCachePool = 0;
+static SpatialiteCachePool *spatialiteCachePool = NULL;
 
 static SpatialiteCacheNode *lookupSpatialiteCacheForHandle(sqlite3 *handle)
 {
@@ -75,15 +75,17 @@ static SpatialiteCacheNode* allocSpatialiteCacheForHandle(sqlite3 *handle)
         n->spatialiteCache = spatialite_alloc_connection();
         n->handle = handle;
         n->next = NULL;
-        if (!spatialiteCachePool) {
+        n->prev = NULL;
+        if (spatialiteCachePool == NULL) {
             spatialiteCachePool = malloc(sizeof(SpatialiteCachePool));
-            n->prev = NULL;
             spatialiteCachePool->first = n;
             spatialiteCachePool->last = n;
             spatialiteCachePool->length = 1;
         } else {
             n->prev = spatialiteCachePool->last;
-            spatialiteCachePool->last->next = n;
+            if (spatialiteCachePool->last) {
+                spatialiteCachePool->last->next = n;
+            }
             spatialiteCachePool->last = n;
             spatialiteCachePool->length++;
         }
@@ -95,7 +97,6 @@ static void clearSpatialiteCacheForHandle(sqlite3 *handle)
 {
     SpatialiteCacheNode *n = lookupSpatialiteCacheForHandle(handle);
     if (!n) return;
-    
     if (n->prev) {
         n->prev->next = n->next;
     } else {
@@ -441,6 +442,10 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_init_1spatialite_1ex(
         JNIEnv *env, jobject this, jboolean verbose)
 {
     sqlite3 *handle = gethandle(env, this);
+    if (!handle) {
+        throwexmsg(env, "No database handle!");
+        return 0;
+    }
     SpatialiteCacheNode *n = allocSpatialiteCacheForHandle(handle);
     spatialite_init_ex(handle, n->spatialiteCache, verbose ? 1 : 0);
     return 1;
