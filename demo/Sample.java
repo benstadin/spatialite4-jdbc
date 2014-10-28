@@ -12,7 +12,7 @@
         try
         {
           // create a database connection
-          connection = DriverManager.getConnection("jdbc:spatialite4:sample.db");
+          connection = DriverManager.getConnection("jdbc:spatialite:sample.db");
           Statement statement = connection.createStatement();
           statement.setQueryTimeout(30);  // set timeout to 30 sec.
           

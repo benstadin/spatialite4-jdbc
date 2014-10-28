@@ -4,7 +4,7 @@ include Makefile.common
 
 RESOURCE_DIR = src/main/resources
 
-.phony: all package win32 mac32 mac64 linux32 native deploy
+.phony: all package win32 mac32 mac64 linux32 linux64 native deploy
 
 all: package
 
@@ -14,7 +14,7 @@ deploy:
 MVN:=mvn
 SRC:=src/main/java
 
-OUT_DIR:=$(TARGET)/spatialite4-$(OS_NAME)-$(OS_ARCH)
+OUT_DIR:=$(TARGET)/spatialite-$(OS_NAME)-$(OS_ARCH)
 SQLITE_ARCHIVE:=$(TARGET)/$(sqlite)-amal.zip
 SQLITE_UNPACKED:=$(TARGET)/sqlite-unpack.log
 SQLITE_AMAL_DIR=$(TARGET)/$(SQLITE_AMAL_PREFIX)
@@ -23,22 +23,6 @@ SPATIALITE_ARCHIVE:=$(TARGET)/libspatialite-$(SPATIALITE_VERSION).zip
 SPATIALITE_UNPACKED:=$(TARGET)/spatialite-unpack.log
 SPATIALITE_DIR=$(TARGET)/libspatialite-$(SPATIALITE_VERSION)
 SPATIALITE_LIB=$(SPATIALITE_DIR)/src/.libs/libspatialite.a
-
-ifeq ($(OS_NAME),Windows)
-	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-    SPATIALITE_FLAGS = 
-else ifeq ($(OS_NAME),Linux)
-	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-    SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
-else ifeq ($(OS_NAME),Mac)
-	ifeq ($(target),Mac-x86_64)
-    	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
-    else
-    	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no CC=clang CXX="clang++ -std=c++11 -stdlib=libc++"
-		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a  /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a 
-    endif
-endif
 
 CFLAGS:= -I$(OUT_DIR) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
 
@@ -62,14 +46,14 @@ $(SPATIALITE_LIB): $(SPATIALITE_UNPACKED)
 	(cd $(SPATIALITE_DIR) && ./configure $(SPATIALITE_CONFIG_FLAGS))
 	(cd $(SPATIALITE_DIR) && make)
 
-$(OUT_DIR)/org/spatialite4/%.class: src/main/java/org/spatialite4/%.java
+$(OUT_DIR)/org/spatialite/%.class: src/main/java/org/spatialite/%.java
 	@mkdir -p $(@D)
 	$(JAVAC) -source 1.5 -target 1.5 -sourcepath $(SRC) -d $(OUT_DIR) $<
 
 jni-header: $(OUT_DIR)/NativeDB.h
 
-$(OUT_DIR)/NativeDB.h: $(OUT_DIR)/org/spatialite4/core/NativeDB.class
-	$(JAVAH) -classpath $(OUT_DIR) -jni -o $@ org.spatialite4.core.NativeDB
+$(OUT_DIR)/NativeDB.h: $(OUT_DIR)/org/spatialite/core/NativeDB.class
+	$(JAVAH) -classpath $(OUT_DIR) -jni -o $@ org.spatialite.core.NativeDB
 
 test:
 	mvn test
@@ -96,15 +80,15 @@ $(OUT_DIR)/sqlite3.o : $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
 	    $(SQLITE_FLAGS) \
 	    $(OUT_DIR)/sqlite3.c
 
-$(OUT_DIR)/$(LIBNAME): $(OUT_DIR)/sqlite3.o $(SRC)/org/spatialite4/core/NativeDB.c $(OUT_DIR)/NativeDB.h
+$(OUT_DIR)/$(LIBNAME): $(OUT_DIR)/sqlite3.o $(SRC)/org/spatialite/core/NativeDB.c $(OUT_DIR)/NativeDB.h
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c -o $(OUT_DIR)/NativeDB.o $(SRC)/org/spatialite4/core/NativeDB.c $(SPATIALITE_FLAGS) 
+	$(CC) $(CFLAGS) -c -o $(OUT_DIR)/NativeDB.o $(SRC)/org/spatialite/core/NativeDB.c $(SPATIALITE_FLAGS) 
 	$(CC) $(CFLAGS) -o $@ $(OUT_DIR)/*.o $(SPATIALITE_FLAGS) $(LINKFLAGS)
 	$(STRIP) $@
 
 
-NATIVE_DIR=src/main/resources/org/spatialite4/native/$(OS_NAME)/$(OS_ARCH)
-NATIVE_TARGET_DIR:=$(TARGET)/classes/org/spatialite4/native/$(OS_NAME)/$(OS_ARCH)
+NATIVE_DIR=src/main/resources/org/spatialite/native/$(OS_NAME)/$(OS_ARCH)
+NATIVE_TARGET_DIR:=$(TARGET)/classes/org/spatialite/native/$(OS_NAME)/$(OS_ARCH)
 NATIVE_DLL:=$(NATIVE_DIR)/$(LIBNAME)
 
 native: $(SQLITE_UNPACKED) $(NATIVE_DLL)
@@ -125,6 +109,8 @@ win64:
 linux32:
 	$(MAKE) native OS_NAME=Linux OS_ARCH=i386
 
+linux64:
+	$(MAKE) native OS_NAME=Linux OS_ARCH=amd64
 
 sparcv9:
 	$(MAKE) native OS_NAME=SunOS OS_ARCH=sparcv9
@@ -137,7 +123,7 @@ mac64:
 	$(MAKE) native OS_NAME=Mac OS_ARCH=x86_64
 	
 
-package: $(NATIVE32_DLL) native 
+package: $(NATIVE_DLL) native 
 	rm -rf target/dependency-maven-plugin-markers
 	DYLD_LIBRARY_PATH=$(SPATIAL_LIB_PATH) $(MVN) -Djava.library.path=$(SPATIAL_LIB_PATH) -P spatialite package
 
