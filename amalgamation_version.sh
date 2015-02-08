@@ -16,4 +16,4 @@ for num in $1; do
 	let i+=1
 done
 unset IFS
-echo "$version"00
+echo "$version"
