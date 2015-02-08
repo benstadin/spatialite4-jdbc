@@ -16,10 +16,28 @@ SRC:=src/main/java
 
 OUT_DIR:=$(TARGET)/spatialite-$(OS_NAME)-$(OS_ARCH)
 
+ICONV_ARCHIVE:=$(TARGET)/iconv-$(ICONV_VERSION).tar.bz2
+ICONV_UNPACKED:=$(TARGET)/iconv-unpack.log
+ICONV_DIR=$(TARGET)/libiconv-$(ICONV_VERSION)
+ICONV_LIB=$(ICONV_DIR)/lib/.libs/libiconv.a
+
+$(ICONV_ARCHIVE):
+	@mkdir -p $(@D)
+	curl -o $@ http://ftp.gnu.org/pub/gnu/libiconv/libiconv-$(ICONV_VERSION).tar.gz
+	
+$(ICONV_UNPACKED): $(ICONV_ARCHIVE)
+	tar -xjf $< -C $(TARGET)
+	touch $@
+
+$(ICONV_LIB): $(ICONV_UNPACKED)
+	if [ ! -f $(ICONV_DIR)/Makefile ]; then (cd $(ICONV_DIR) && ./configure $(ICONV_CONFIG_FLAGS)); fi;	
+	(cd $(ICONV_DIR) && make)
+
 GEOS_ARCHIVE:=$(TARGET)/geos-$(GEOS_VERSION).tar.bz2
 GEOS_UNPACKED:=$(TARGET)/geos-unpack.log
 GEOS_DIR=$(TARGET)/geos-$(GEOS_VERSION)
 GEOS_LIB=$(GEOS_DIR)/src/.libs/libgeos.a
+GEOS_C_LIB=$(GEOS_DIR)/capi/.libs/libgeos_c.a
 
 $(GEOS_ARCHIVE):
 	@mkdir -p $(@D)
@@ -30,7 +48,7 @@ $(GEOS_UNPACKED): $(GEOS_ARCHIVE)
 	touch $@
 
 $(GEOS_LIB): $(GEOS_UNPACKED)
-	if [ ! -f $(GEOS_DIR)/Makefile ]; then (cd $(GEOS_DIR) && ./configure $(GEOS_CONFIG_FLAGS)); fi;	
+	if [ ! -f $(GEOS_DIR)/Makefile ]; then (cd $(GEOS_DIR) && $(GEOS_FORCE_COMPILERS) ./configure $(GEOS_CONFIG_FLAGS)); fi;	
 	(cd $(GEOS_DIR) && make)
 
 PROJ_ARCHIVE:=$(TARGET)/proj-$(PROJ_VERSION).tar.gz
@@ -107,7 +125,7 @@ SQLITE_AMAL_DIR=$(TARGET)/$(SQLITE_AMAL_PREFIX)
 
 $(SQLITE_ARCHIVE):
 	@mkdir -p $(@D)
-	curl -o $@ http://www.sqlite.org/2014/$(SQLITE_AMAL_PREFIX).zip
+	curl -o $@ http://www.sqlite.org/2015/$(SQLITE_AMAL_PREFIX).zip
 
 $(SQLITE_UNPACKED): $(SQLITE_ARCHIVE)
 	unzip -qo $< -d $(TARGET)
@@ -117,6 +135,7 @@ SPATIALITE_ARCHIVE:=$(TARGET)/libspatialite-$(SPATIALITE_VERSION).zip
 SPATIALITE_UNPACKED:=$(TARGET)/spatialite-unpack.log
 SPATIALITE_DIR=$(TARGET)/libspatialite-$(SPATIALITE_VERSION)
 SPATIALITE_LIB=$(SPATIALITE_DIR)/src/.libs/libspatialite.a
+SPATIALITE_VIRTUALTEXT_LIB=$(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a
 
 $(SPATIALITE_ARCHIVE):
 	@mkdir -p $(@D)
@@ -130,7 +149,7 @@ $(SPATIALITE_LIB): $(SPATIALITE_UNPACKED)
 	if [ ! -f $(SPATIALITE_DIR)/Makefile ]; then (cd $(SPATIALITE_DIR) && ./configure $(SPATIALITE_CONFIG_FLAGS)); fi;
 	(cd $(SPATIALITE_DIR) && make)
 
-CFLAGS:= -I$(ZLIB_DIR) -I$(LZMA_DIR)/src -I$(LIBXML2_DIR)/include -I$(PROJ_DIR)/src -I$(GEOS_DIR)/include -I$(OUT_DIR) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
+CFLAGS:= -I$(ZLIB_DIR) -I$(LZMA_DIR)/src -I$(LIBXML2_DIR)/include -I$(PROJ_DIR)/src -I$(GEOS_DIR)/include -I$(ICONV_DIR)/include -I$(OUT_DIR) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
 
 $(OUT_DIR)/org/spatialite/%.class: src/main/java/org/spatialite/%.java
 	@mkdir -p $(@D)
@@ -146,7 +165,7 @@ test:
 
 clean: clean-native clean-java clean-tests
 
-$(OUT_DIR)/sqlite3.o : $(LZMA_LIB) $(ZLIB_LIB) $(LIBXML2_LIB) $(PROJ_LIB) $(GEOS_LIB) $(SQLITE_UNPACKED) $(SPATIALITE_LIB)
+$(OUT_DIR)/sqlite3.o : $(LZMA_LIB) $(ZLIB_LIB) $(LIBXML2_LIB) $(PROJ_LIB) $(GEOS_LIB) $(SQLITE_UNPACKED) $(SPATIALITE_LIB) $(ICONV_LIB)
 	@mkdir -p $(@D)
 	perl -p -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
 	    $(SQLITE_AMAL_DIR)/sqlite3ext.h > $(OUT_DIR)/sqlite3ext.h
@@ -228,6 +247,8 @@ clean-native:
 	rm -f $(ZLIB_UNPACKED)
 	rm -rf $(LZMA_DIR)
 	rm -f $(LZMA_UNPACKED)
+	rm -rf $(ICONV_DIR)
+	rm -f $(ICONV_UNPACKED)
 
 clean-java:
 	rm -rf $(TARGET)/*classes

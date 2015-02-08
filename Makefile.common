@@ -91,10 +91,10 @@ endif
 
 Mac-i386_CC        := gcc -arch $(OS_ARCH) 
 Mac-i386_STRIP     := strip -x
-Mac-i386_CFLAGS    := -I$(MAC_JNI_HOME) -I$(MAC_LIBXML_INC) -O2 -fPIC -mmacosx-version-min=10.4 -fvisibility=hidden
+Mac-i386_CFLAGS    := -I$(MAC_JNI_HOME) -O2 -fPIC -mmacosx-version-min=10.4 -fvisibility=hidden
 Mac-i386_LINKFLAGS := -dynamiclib
 Mac-i386_LIBNAME   := libspatialitejdbc.jnilib
-Mac-i386_SQLITE_FLAGS  := -DSQLITE_ENABLE_LOCKING_STYLE=0
+Mac-i386_SQLITE_FLAGS  := -DSQLITE_ENABLE_LOCKING_STYLE=0 
 
 Mac-x86_64_CC        := clang -arch $(OS_ARCH) 
 Mac-x86_64_STRIP     := strip -x
@@ -102,7 +102,7 @@ MAC_SDK := /Developer/SDKs/MacOSX10.7.sdk
 ifeq ($(wildcard MAC_SDK),)
 	MAC_SDK := /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk
 endif
-Mac-x86_64_CFLAGS    := -I$(MAC_JNI_HOME) -I$(MAC_LIBXML_INC) -O2 -fPIC -mmacosx-version-min=10.9 -fvisibility=hidden
+Mac-x86_64_CFLAGS    := -I$(MAC_JNI_HOME) -O2 -fPIC -mmacosx-version-min=10.9 -fvisibility=hidden
 Mac-x86_64_LINKFLAGS := -dynamiclib 
 Mac-x86_64_LIBNAME   := libspatialitejdbc.jnilib
 Mac-x86_64_SQLITE_FLAGS  := 
@@ -136,26 +136,36 @@ endif
 
 # todo: set correct configure and linker flags for i386 arch below 
 
-GEOS_CONFIG_FLAGS = --with-pic 
+#OS X build flags: http://www.kyngchaos.com/macosx/build/geos
+
 PROJ_CONFIG_FLAGS = --with-pic
 LIBXML2_CONFIG_FLAGS = --with-pic
 LZMA_CONFIG_FLAGS = --with-pic
+ICONV_CONFIG_FLAGS = --with-pic --enable-static
  
 SPATIALITE_CONFIG_FLAGS = --with-pic --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a $(GEOS_DIR)/capi/.libs/libgeos_c.a $(GEOS_DIR)/src/.libs/libgeos.a $(PROJ_DIR)/src/.libs/libproj.a $(LIBXML2_DIR)/.libs/libxml2.a $(ZLIB_DIR)/libz.a $(LZMA_DIR)/src/sdk/7zip/Compress/LZMA/libLZMA.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a $(GEOS_DIR)/capi/.libs/libgeos_c.a $(GEOS_DIR)/src/.libs/libgeos.a $(PROJ_DIR)/src/.libs/libproj.a $(LIBXML2_DIR)/.libs/libxml2.a $(ZLIB_DIR)/libz.a $(LZMA_DIR)/src/sdk/7zip/Compress/LZMA/libLZMA.a $(ICONV_DIR)/lib/.libs/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
 
+# Note: GEOS is picky about the compiler, at least on OS X. We force to use clang on OS X to make it work, otherwise it's configure script will fail.
 ifeq ($(OS_NAME),Windows)
     NATIVE_DLL = win32
+    GEOS_CONFIG_FLAGS = --with-pic
+    GEOS_FORCE_COMPILERS = 
 else ifeq ($(OS_NAME),Linux)
+	GEOS_CONFIG_FLAGS = --with-pic
+	GEOS_FORCE_COMPILERS = 
     ifeq ($(target),Linux-amd64)
         NATIVE_DLL = linux64
     else
     	NATIVE_DLL = linux32
     endif
 else ifeq ($(OS_NAME),Mac)
+	GEOS_CONFIG_FLAGS = --with-pic --disable-dependency-tracking CFLAGS="-Os -arch i386 -arch x86_64" CXXFLAGS="-Os -arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"
     ifeq ($(target),Mac-x86_64)
         NATIVE_DLL = mac64
+        GEOS_FORCE_COMPILERS = CC=clang CXX=clang++
     else
     	NATIVE_DLL = mac32
+    	GEOS_FORCE_COMPILERS = 
     endif
 endif
