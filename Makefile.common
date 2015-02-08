@@ -134,31 +134,28 @@ ifneq ($(jni_include),)
 CFLAGS := $(CFLAGS) -I"$(jni_include)"
 endif
 
-
 # todo: set correct configure and linker flags for i386 arch below 
 
+GEOS_CONFIG_FLAGS = --with-pic 
+PROJ_CONFIG_FLAGS = --with-pic
+LIBXML2_CONFIG_FLAGS = --with-pic
+LZMA_CONFIG_FLAGS = --with-pic
+ 
+SPATIALITE_CONFIG_FLAGS = --with-pic --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
+SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a $(GEOS_DIR)/capi/.libs/libgeos_c.a $(GEOS_DIR)/src/.libs/libgeos.a $(PROJ_DIR)/src/.libs/libproj.a $(LIBXML2_DIR)/.libs/libxml2.a $(ZLIB_DIR)/libz.a $(LZMA_DIR)/src/sdk/7zip/Compress/LZMA/libLZMA.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+
 ifeq ($(OS_NAME),Windows)
-    SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-    SPATIALITE_FLAGS = 
     NATIVE_DLL = win32
 else ifeq ($(OS_NAME),Linux)
     ifeq ($(target),Linux-amd64)
         NATIVE_DLL = linux64
-		SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-    	SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /usr/local/lib/libgeos.a /usr/lib/libproj.a /usr/local/lib/libgeos_c.a /usr/lib/x86_64-linux-gnu/libxml2.a /usr/lib/x86_64-linux-gnu/libz.a /usr/lib/x86_64-linux-gnu/liblzma.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
     else
     	NATIVE_DLL = linux32
-		SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-    	SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /usr/local/lib/libgeos.a /usr/lib/libproj.a /usr/local/lib/libgeos_c.a /usr/local/lib/libxml2.a /usr/local/lib/libz.a /usr/local/lib/liblzma.a /usr/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
     endif
 else ifeq ($(OS_NAME),Mac)
     ifeq ($(target),Mac-x86_64)
         NATIVE_DLL = mac64
-    	SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
     else
     	NATIVE_DLL = mac32
-		SPATIALITE_CONFIG_FLAGS = --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no CC=clang CXX="clang++ -std=c++11 -stdlib=libc++"
-		SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a /opt/local/lib/libgeos.a /opt/local/lib/libproj.a /opt/local/lib/libgeos_c.a /opt/local/lib/libxml2.a /opt/local/lib/libz.a /opt/local/lib/liblzma.a  /opt/local/lib/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a 
     endif
 endif
