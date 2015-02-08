@@ -14,9 +14,9 @@ Changes:
 
 Current versions included:
 SQLite: 3.8.7
-SpatiaLite: 4.2.1-RC0
+SpatiaLite: 4.2.1-RC1
 
-Current status: Initial version. Builds on OS X with all tests ok. No real-world testing done yet. 
+Current status: Initial version. Builds on OS X and Linux with all tests ok. No real-world testing done yet. 
 
 Original xerial SQLite library notice:
 
