@@ -2,11 +2,11 @@ How to compile a new version of SQLiteJDBC
 ===========================================
 Prerequisites
 -------------
-1. JDK 1.5
+1. JDK 1.6
 2. Perl
 3. Maven
 4. make
-5. gcc
+5. gcc (clang on OS X)
 6. curl
 7. unzip
 
@@ -17,23 +17,6 @@ Build
 3. Then, run:
 
         $ make
-
-
-How to submit a patch
-=====================
-Bitbucket Pull Request
-----------------------
-1. Fork this project on bitbucket
-2. (make some change)
-3. `hg commit -m 'what changes are made to the source'`
-4. `hg push`
-5. Create a pull request
-
-Patch file
-----------
-1. Create a new issue on <https://bitbucket.org/xerial/sqlite-jdbc/issues>
-2. Attach a patch file to issue
-
 
 How to build Win64 native library
 =================================
@@ -58,35 +41,3 @@ Here is the excerpt from <http://mingw-w64.sourceforge.net/>
 
 * Then, do 
         $ make native
-
-
-How to build pure-java library
-==============================
-***The pure-java library is no longer supported as of version 3.7.15. 
-<https://bitbucket.org/xerial/sqlite-jdbc/issue/10/dropping-pure-java-support>***
-
-* Use Mac OS X or Linux with gcc-3.x
-
-        make purejava
-
-* The build will fail due to the broken regex libray, so copy the non-corrupted
-archive I downloaded:
-
-        $ cp archive/regex3.8a.tar.gz target/build/nestedvm-2009-08-09/upstream/downlolad/
-
-* then do 
-
-        'make purejava' 
-
-
-(for deployer only) How to build pure-java and native libraries
-===============================================================
-        make -fMakefile.package 
-
-
-How to deploy to the maven repository
-=====================================
-    mvn deploy
-    mvn deploy -Psourceforge  
-(for uploading Sourceforge.jp repository, which are synchronized with the Maven
- central repository)
