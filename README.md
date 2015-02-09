@@ -26,7 +26,7 @@ Current status: Initial version. Builds on OS X and Linux with all tests ok. No 
 Usage
 ============ 
 
-Note: Please see Xerial's documentation for common SQLite usage examples. This is just a very short introduction to initialize the SpatiaLite 4 JDBC driver.
+Note: Please see Xerial's documentation for common SQLite usage examples. This is just a very short introduction on how to initialize the SpatiaLite 4 JDBC driver.
 
 For the general usage of JDBC, see [JDBC Tutorial](http://docs.oracle.com/javase/tutorial/jdbc/index.html) or [Oracle JDBC Documentation](http://www.oracle.com/technetwork/java/javase/tech/index-jsp-136101.html).
 
