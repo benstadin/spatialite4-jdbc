@@ -1,9 +1,4 @@
-spatialite4-jdbc
-================
-
-JDBC library for SpatiaLite 4.2+
-
-SpatiaLite4 is a fork of Xerial's current SQLite library with added support for the latest SpatiaLite library (4.2+), and Justin Deoliveira's SpatiaLite fork. 
+spatialite is a fork of Xerial's current SQLite library with added support for the latest SpatiaLite library (4.2+), and Justin Deoliveira's SpatiaLite fork.
 The Spatialite 4.2+ has changed significantly especially in regards to the extension loading), therefore a new library for Spatialite 4.2 and upwards was created. 
 
 Original libraries:
@@ -19,9 +14,9 @@ Changes:
 
 Current versions included:
 SQLite: 3.8.7
-SpatiaLite: 4.2.1-RC0
+SpatiaLite: 4.2.1-RC1
 
-Current status: Initial version. Builds on OS X with all tests ok. No real-world testing done yet. 
+Current status: Initial version. Builds on OS X and Linux with all tests ok. No real-world testing done yet. 
 
 Original xerial SQLite library notice:
 
@@ -98,7 +93,7 @@ Connection connection = null;
 try
 {
 // create a database connection
-connection = DriverManager.getConnection("jdbc.spatialite4:sample.db");
+connection = DriverManager.getConnection("jdbc.spatialite:sample.db");
 Statement statement = connection.createStatement();
 statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
@@ -143,12 +138,12 @@ How to Specify Database Files
 
 Here is an example to select a file `C:\work\mydatabase.db` (in Windows)
 
-Connection connection = DriverManager.getConnection("jdbc.spatialite4:C:/work/mydatabase.db");
+Connection connection = DriverManager.getConnection("jdbc.spatialite:C:/work/mydatabase.db");
 
 
 A UNIX (Linux, Mac OS X, etc) file `/home/leo/work/mydatabase.db`
 
-Connection connection = DriverManager.getConnection("jdbc.spatialite4:/home/leo/work/mydatabase.db");
+Connection connection = DriverManager.getConnection("jdbc.spatialite:/home/leo/work/mydatabase.db");
 
 
 
@@ -157,7 +152,7 @@ How to Use Memory Databases
 SQLite supports on-memory database management, which does not create any database files. 
 To use a memory database in your Java code, get the database connection as follows:
 
-Connection connection = DriverManager.getConnection("jdbc.spatialite4::memory:");
+Connection connection = DriverManager.getConnection("jdbc.spatialite::memory:");
 
 
 News
@@ -185,7 +180,7 @@ SQLiteConfig config = new SQLiteConfig();
 config.setSharedCache(true);
 config.recursiveTriggers(true);
 // ... other configuration can be set via SQLiteConfig object
-Connection conn = DriverManager.getConnection("jdbc.spatialite4:sample.db", config.toProperties());
+Connection conn = DriverManager.getConnection("jdbc.spatialite:sample.db", config.toProperties());
 
 
 *   2009 November 12th: [sqlite-jdbc-3.6.19](http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/3.6.19/) released. 
@@ -194,7 +189,7 @@ Connection conn = DriverManager.getConnection("jdbc.spatialite4:sample.db", conf
 *   2009 July 2nd: [sqlite-jdbc-3.6.16](http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/3.6.16/) release. 
 *   2009 June 4th: [sqlite-jdbc-3.6.14.2](http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/3.6.14.2/) released. 
 *   2009 May 19th: [sqlite-jdbc-3.6.14.1](http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/3.6.14.1/) released. 
-*   This version supports "jdbc.spatialite4::resource:" syntax to access read-only 
+*   This version supports "jdbc.spatialite::resource:" syntax to access read-only
 DB files contained in JAR archives, or external resources specified via URL, local files address etc. (see also the <http://groups.google.com/group/xerial/browse_thread/thread/39acb38f99eb2469/fc6afceabeaa0f76?lnk=gst&q=resource#fc6afceabeaa0f76 detailes>
 
 
@@ -210,7 +205,7 @@ sqlite version 3.6.10. <http://www.sqlite.org/releaselog/3_6_10.html>
 // READ_UNCOMMITTED mode works only in shared_cache mode.
 Properties prop = new Properties();
 prop.setProperty("shared_cache", "true");
-Connection conn = DriverManager.getConnection("jdbc.spatialite4:", prop);
+Connection conn = DriverManager.getConnection("jdbc.spatialite:", prop);
 conn.setTransactionIsolation(Conn.TRANSACTION_READ_UNCOMMITTED);
 
 

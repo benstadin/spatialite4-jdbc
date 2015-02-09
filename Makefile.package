@@ -3,22 +3,22 @@ NATIVE_DIR=$(RESOURCE_DIR)/native
 RSYNC=rsync -av -e ssh --exclude=".svn"
 
 WIN_SERVER=localhost
-WIN_WORK=work/hg/sqlite-jdbc
+WIN_WORK=work/hg/spatialite-jdbc
 
 WIN64_SERVER=localhost
-WIN64_WORK=work/hg/sqlite-jdbc
+WIN64_WORK=work/hg/spatialite-jdbc
 
 MAC_SERVER=172.29.62.21
-MAC_WORK=work/hg/sqlite-jdbc
+MAC_WORK=work/hg/spatialite-jdbc
 
 MAC_TIGER_SERVER=172.16.153.128
-MAC_TIGER_WORK=work/hg/sqlite-jdbc
+MAC_TIGER_WORK=work/hg/spatialite-jdbc
 
 LINUX_SERVER=hx02
-LINUX_WORK=work/hg/sqlite-jdbc
+LINUX_WORK=work/hg/spatialite-jdbc
 
 AMD_SERVER=hx02
-AMD_WORK=work/hg/sqlite-jdbc
+AMD_WORK=work/hg/spatialite-jdbc
 
 BUILD_CMD = hg pull -u && make clean-native && make native
 TEST_CMD = mvn test
