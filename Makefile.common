@@ -40,7 +40,7 @@ endif
 
 # os=Default is meant to be generic unix/linux
 
-known_targets := Linux-i386 Linux-amd64 Mac-i386 Mac-x86_64 OpenBSD-amd64 Windows-x86 Windows-amd64 SunOS-sparcv9
+known_targets := Linux-i386 Linux-amd64 Linux-arm Mac-i386 Mac-x86_64 FreeBSD-amd64 OpenBSD-amd64 Windows-x86 Windows-amd64 SunOS-sparcv9
 target := $(OS_NAME)-$(OS_ARCH)
 
 ifeq (,$(findstring $(strip $(target)),$(known_targets)))
@@ -67,6 +67,20 @@ Linux-amd64_CFLAGS    := -Ilib/inc_linux -I$(JAVA_HOME)/include -O2 -fPIC -m64 -
 Linux-amd64_LINKFLAGS := -shared -static-libgcc
 Linux-amd64_LIBNAME   := libspatialitejdbc.so
 Linux-amd64_SQLITE_FLAGS  := 
+
+Linux-arm_CC := gcc
+Linux-arm_STRIP := strip
+Linux-arm_CFLAGS := -I$(JAVA_HOME)/include -Ilib/inc_linux -O2 -mfloat-abi=hard -mfpu=vfp -fPIC -fvisibility=hidden
+Linux-arm_LINKFLAGS := -shared -static-libgcc
+Linux-arm_LIBNAME := libsqlitejdbc.so
+Linux-arm_SQLITE_FLAGS :=
+
+FreeBSD-amd64_CC  := cc
+FreeBSD-amd64_STRIP  := strip
+FreeBSD-amd64_CFLAGS    := -I$(JAVA_HOME)/include -Ilib/inc_linux -O2 -fPIC -fvisibility=hidden
+FreeBSD-amd64_LINKFLAGS := -shared
+FreeBSD-amd64_LIBNAME   := libsqlitejdbc.so
+FreeBSD-amd64_SQLITE_FLAGS  :=
 
 OpenBSD-amd64_CC  := gcc
 OpenBSD-amd64_STRIP  := strip
@@ -154,10 +168,12 @@ ifeq ($(OS_NAME),Windows)
 else ifeq ($(OS_NAME),Linux)
 	GEOS_CONFIG_FLAGS = --with-pic
 	GEOS_FORCE_COMPILERS = 
+    ifeq ($(target),Linux-arm)
+        NATIVE_DLL = linuxarm
     ifeq ($(target),Linux-amd64)
         NATIVE_DLL = linux64
     else
-    	NATIVE_DLL = linux32
+        NATIVE_DLL = linux32
     endif
 else ifeq ($(OS_NAME),Mac)
 	GEOS_CONFIG_FLAGS = --with-pic --disable-dependency-tracking CFLAGS="-Os -arch i386 -arch x86_64" CXXFLAGS="-Os -arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"

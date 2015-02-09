@@ -214,8 +214,13 @@ win64:
 linux32:
 	$(MAKE) native OS_NAME=Linux OS_ARCH=i386
 
+
 linux64:
 	$(MAKE) native OS_NAME=Linux OS_ARCH=amd64
+
+
+linuxarm:
+	$(MAKE) native OS_NAME=Linux OS_ARCH=arm
 
 sparcv9:
 	$(MAKE) native OS_NAME=SunOS OS_ARCH=sparcv9
