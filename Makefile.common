@@ -170,7 +170,7 @@ else ifeq ($(OS_NAME),Linux)
 	GEOS_FORCE_COMPILERS = 
     ifeq ($(target),Linux-arm)
         NATIVE_DLL = linuxarm
-    ifeq ($(target),Linux-amd64)
+    else ifeq ($(target),Linux-amd64)
         NATIVE_DLL = linux64
     else
         NATIVE_DLL = linux32
