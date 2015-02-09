@@ -283,7 +283,7 @@ public class ConnectionTest
     	 File testDB = copyToTemp("sample.db");
 
          assertTrue(testDB.exists());
-         Connection conn = DriverManager.getConnection(String.format("jdbc:sqlite:%s?journal_mode=WAL&synchronous=OFF&journal_size_limit=500", testDB));
+         Connection conn = DriverManager.getConnection(String.format("jdbc:spatialite:%s?journal_mode=WAL&synchronous=OFF&journal_size_limit=500", testDB));
          Statement stat = conn.createStatement();
 
          ResultSet rs = stat.executeQuery("pragma journal_mode");
@@ -304,7 +304,7 @@ public class ConnectionTest
 
     @Test
     public void ignoreUnknownParametersInURI() throws Exception {
-    	Connection conn = DriverManager.getConnection("jdbc:sqlite:file::memory:?cache=shared&foreign_keys=ON&debug=&invalid");
+    	Connection conn = DriverManager.getConnection("jdbc:spatialite:file::memory:?cache=shared&foreign_keys=ON&debug=&invalid");
     	Statement stat = conn.createStatement();
 
     	ResultSet rs = stat.executeQuery("pragma foreign_keys");
@@ -317,7 +317,7 @@ public class ConnectionTest
 
     @Test(expected = SQLException.class)
     public void errorOnEmptyPragmaValueInURI() throws Exception {
-   		DriverManager.getConnection("jdbc:sqlite:file::memory:?journal_mode=&synchronous=");
+   		DriverManager.getConnection("jdbc:spatialite:file::memory:?journal_mode=&synchronous=");
     }
 
     @Test
@@ -325,7 +325,7 @@ public class ConnectionTest
     	File testDB = copyToTemp("sample.db");
 
     	assertTrue(testDB.exists());
-    	Connection conn = DriverManager.getConnection(String.format("jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=WAL", testDB));
+    	Connection conn = DriverManager.getConnection(String.format("jdbc:spatialite:%s?synchronous=OFF&&&&journal_mode=WAL", testDB));
     	Statement stat = conn.createStatement();
 
     	ResultSet rs = stat.executeQuery("pragma journal_mode");
@@ -345,7 +345,7 @@ public class ConnectionTest
     	File testDB = copyToTemp("sample.db");
 
     	assertTrue(testDB.exists());
-    	Connection conn = DriverManager.getConnection(String.format("jdbc:sqlite:%s?journal_mode=WAL&journal_mode=MEMORY&journal_mode=TRUNCATE", testDB));
+    	Connection conn = DriverManager.getConnection(String.format("jdbc:spatialite:%s?journal_mode=WAL&journal_mode=MEMORY&journal_mode=TRUNCATE", testDB));
     	Statement stat = conn.createStatement();
 
     	ResultSet rs = stat.executeQuery("pragma journal_mode");
@@ -363,7 +363,7 @@ public class ConnectionTest
     	assertTrue(testDB.exists());
     	Properties props = new Properties();
     	props.setProperty(Pragma.JOURNAL_MODE.pragmaName, JournalMode.TRUNCATE.name());
-    	Connection conn = DriverManager.getConnection(String.format("jdbc:sqlite:%s?journal_mode=WAL", testDB), props);
+    	Connection conn = DriverManager.getConnection(String.format("jdbc:spatialite:%s?journal_mode=WAL", testDB), props);
     	Statement stat = conn.createStatement();
 
     	ResultSet rs = stat.executeQuery("pragma journal_mode");

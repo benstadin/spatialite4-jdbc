@@ -44,8 +44,8 @@ public class SavepointTest
         Properties prop = new Properties();
         prop.setProperty("shared_cache", "false");
 
-        conn1 = DriverManager.getConnection("jdbc:sqlite:" + tmpFile.getAbsolutePath(), prop);
-        conn2 = DriverManager.getConnection("jdbc:sqlite:" + tmpFile.getAbsolutePath(), prop);
+        conn1 = DriverManager.getConnection("jdbc:spatialite:" + tmpFile.getAbsolutePath(), prop);
+        conn2 = DriverManager.getConnection("jdbc:spatialite:" + tmpFile.getAbsolutePath(), prop);
 
         stat1 = conn1.createStatement();
         stat2 = conn2.createStatement();
