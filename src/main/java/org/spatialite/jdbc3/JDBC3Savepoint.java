@@ -1,4 +1,4 @@
-package org.sqlite.jdbc3;
+package org.spatialite.jdbc3;
 
 import java.sql.SQLException;
 import java.sql.Savepoint;
