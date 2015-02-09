@@ -16,7 +16,7 @@ SRC:=src/main/java
 
 OUT_DIR:=$(TARGET)/spatialite-$(OS_NAME)-$(OS_ARCH)
 
-ICONV_ARCHIVE:=$(TARGET)/iconv-$(ICONV_VERSION).tar.bz2
+ICONV_ARCHIVE:=$(TARGET)/iconv-$(ICONV_VERSION).tar.gz
 ICONV_UNPACKED:=$(TARGET)/iconv-unpack.log
 ICONV_DIR=$(TARGET)/libiconv-$(ICONV_VERSION)
 ICONV_LIB=$(ICONV_DIR)/lib/.libs/libiconv.a
@@ -26,7 +26,8 @@ $(ICONV_ARCHIVE):
 	curl -o $@ http://ftp.gnu.org/pub/gnu/libiconv/libiconv-$(ICONV_VERSION).tar.gz
 	
 $(ICONV_UNPACKED): $(ICONV_ARCHIVE)
-	tar -xjf $< -C $(TARGET)
+	tar -xzf $< -C $(TARGET)
+	patch -p0 -d $(ICONV_DIR) < libiconv-glibc-2.16.patch
 	touch $@
 
 $(ICONV_LIB): $(ICONV_UNPACKED)
