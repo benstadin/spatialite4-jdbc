@@ -166,6 +166,7 @@ ifeq ($(OS_NAME),Windows)
     GEOS_CONFIG_FLAGS = --with-pic
     GEOS_FORCE_COMPILERS = 
 else ifeq ($(OS_NAME),Linux)
+	NEED_ICONV_GLIBC_PATCH=true
 	GEOS_CONFIG_FLAGS = --with-pic
 	GEOS_FORCE_COMPILERS = 
     ifeq ($(target),Linux-arm)

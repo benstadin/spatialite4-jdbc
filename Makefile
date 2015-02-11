@@ -27,7 +27,7 @@ $(ICONV_ARCHIVE):
 	
 $(ICONV_UNPACKED): $(ICONV_ARCHIVE)
 	tar -xzf $< -C $(TARGET)
-	patch -p0 -d $(ICONV_DIR) < libiconv-glibc-2.16.patch
+	if [ $(NEED_ICONV_GLIBC_PATCH) = true ]; then (patch -p0 -d $(ICONV_DIR) < libiconv-glibc-2.16.patch); fi;	
 	touch $@
 
 $(ICONV_LIB): $(ICONV_UNPACKED)
