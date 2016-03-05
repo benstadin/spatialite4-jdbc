@@ -18,8 +18,8 @@ Changes:
 - Fixes and auto-sanitization to open() and close() methods of the original xerial driver
 
 Current versions included:
-SQLite: 3.8.8.2
-SpatiaLite: 4.2.1-RC1
+SQLite: 3.11.1
+SpatiaLite: 4.3.0a
 
 Current status: Initial version. Builds on OS X and Linux with all tests ok. No real-world testing done yet. 
 
@@ -37,7 +37,7 @@ For the general usage of JDBC, see [JDBC Tutorial](http://docs.oracle.com/javase
 
 **Spatialite.java**
 
-java -classpath "demo:release/spatialite-jdbc-4.2.1-rc1.jar" Spatialite
+java -classpath "demo:release/spatialite-jdbc-4.3.0a.jar" Spatialite
 
 
 ```java
@@ -103,7 +103,7 @@ Connection connection = DriverManager.getConnection("jdbc.spatialite::memory:");
 Supported Operating Systems
 ===========================
 
-Currenty spatialite-jdbc-4.2.1-RC1 compiles on OS X 64 and Linux 64 (Ubuntu 14.04). 
+Currenty spatialite-jdbc-4.3.0a compiles on OS X 64 and Linux 64 (Ubuntu 14.04). 
 
 The following operating systems are supported in theory, but no attempt to build has been done yet:
 
