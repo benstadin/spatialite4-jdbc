@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.hdm</groupId>
   <artifactId>spatialite-jdbc</artifactId>
-  <version>4.2.1-rc1</version>
+  <version>4.3.0a</version>
   <name>Spatialite JDBC</name>
   <description>SpatiaLite 4 JDBC library</description>
 
