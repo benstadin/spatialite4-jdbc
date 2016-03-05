@@ -126,7 +126,7 @@ SQLITE_AMAL_DIR=$(TARGET)/$(SQLITE_AMAL_PREFIX)
 
 $(SQLITE_ARCHIVE):
 	@mkdir -p $(@D)
-	curl -o $@ http://www.sqlite.org/2015/$(SQLITE_AMAL_PREFIX).zip
+	curl -o $@ http://www.sqlite.org/2016/$(SQLITE_AMAL_PREFIX).zip
 
 $(SQLITE_UNPACKED): $(SQLITE_ARCHIVE)
 	unzip -qo $< -d $(TARGET)
