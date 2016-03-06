@@ -169,7 +169,7 @@ ifeq ($(OS_NAME),Windows)
     GEOS_CONFIG_FLAGS = --with-pic
     GEOS_FORCE_COMPILERS = 
 else ifeq ($(OS_NAME),Linux)
-	LIBXML2_CONFIG_FLAGS = --without-lzma --without-python
+	LIBXML2_CONFIG_FLAGS = --with-pic --without-lzma --without-python
 	NEED_ICONV_GLIBC_PATCH=true
 	GEOS_CONFIG_FLAGS = --with-pic
 	GEOS_FORCE_COMPILERS = 
