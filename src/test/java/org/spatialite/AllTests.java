@@ -2,6 +2,7 @@ package org.spatialite;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.spatialite.util.OSInfoTest;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

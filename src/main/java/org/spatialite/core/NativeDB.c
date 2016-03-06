@@ -138,7 +138,7 @@ static void throwex(JNIEnv *env, jobject this)
     (*env)->CallVoidMethod(env, this, mth_throwex);
 }
 
-static void throw_errorcode(JNIEnv *env, jobject this, int errorCode)
+static void throwex_errorcode(JNIEnv *env, jobject this, int errorCode)
 {
     static jmethodID mth_throwex = 0;
 
@@ -148,7 +148,7 @@ static void throw_errorcode(JNIEnv *env, jobject this, int errorCode)
     (*env)->CallVoidMethod(env, this, mth_throwex, (jint) errorCode);
 }
 
-static void throwexmsg(JNIEnv *env, const char *str)
+static void throwex_msg(JNIEnv *env, const char *str)
 {
     static jmethodID mth_throwexmsg = 0;
 
@@ -159,7 +159,7 @@ static void throwexmsg(JNIEnv *env, const char *str)
                                 (*env)->NewStringUTF(env, str));
 }
 
-static void throw_errorcod_and_msg(JNIEnv *env, int errorCode, const char *str)
+static void throwex_errorcode_and_msg(JNIEnv *env, int errorCode, const char *str)
 {
     static jmethodID mth_throwexmsg = 0;
 
@@ -169,6 +169,12 @@ static void throw_errorcod_and_msg(JNIEnv *env, int errorCode, const char *str)
     (*env)->CallStaticVoidMethod(env, dbclass, mth_throwexmsg, (jint) errorCode,
                                 (*env)->NewStringUTF(env, str));
 }
+
+static void throwex_outofmemory(JNIEnv *env)
+{
+    throwex_msg(env, "Out of memory");
+}
+
 
 
 static sqlite3 * gethandle(JNIEnv *env, jobject this)
@@ -219,14 +225,14 @@ static sqlite3_value * tovalue(JNIEnv *env, jobject function, jint arg)
     }
 
     // check we have any business being here
-    if (arg  < 0) { throwexmsg(env, "negative arg out of range"); return 0; }
-    if (!function) { throwexmsg(env, "inconstent function"); return 0; }
+    if (arg  < 0) { throwex_msg(env, "negative arg out of range"); return 0; }
+    if (!function) { throwex_msg(env, "inconstent function"); return 0; }
 
     value_pntr = (*env)->GetLongField(env, function, func_value);
     numArgs = (*env)->GetIntField(env, function, func_args);
 
-    if (value_pntr == 0) { throwexmsg(env, "no current value"); return 0; }
-    if (arg >= numArgs) { throwexmsg(env, "arg out of range"); return 0; }
+    if (value_pntr == 0) { throwex_msg(env, "no current value"); return 0; }
+    if (arg >= numArgs) { throwex_msg(env, "arg out of range"); return 0; }
 
     return ((sqlite3_value**)toref(value_pntr))[arg];
 }
@@ -234,9 +240,9 @@ static sqlite3_value * tovalue(JNIEnv *env, jobject function, jint arg)
 /* called if an exception occured processing xFunc */
 static void xFunc_error(sqlite3_context *context, JNIEnv *env)
 {
-    const char *strmsg = 0;
+    const jchar *msgstr = 0;
     jstring msg = 0;
-    jint msgsize = 0;
+    jint msglength = 0;
 
     jclass exclass = 0;
     static jmethodID exp_msg = 0;
@@ -253,13 +259,13 @@ static void xFunc_error(sqlite3_context *context, JNIEnv *env)
     msg = (jstring)(*env)->CallObjectMethod(env, ex, exp_msg);
     if (!msg) { sqlite3_result_error(context, "unknown error", 13); return; }
 
-    msgsize = (*env)->GetStringUTFLength(env, msg);
-    strmsg = (*env)->GetStringUTFChars(env, msg, 0);
-    assert(strmsg); // out-of-memory
+    msglength = (*env)->GetStringLength(env, msg);
+    msgstr = (*env)->GetStringCritical(env, msg, 0);
+    if (!msgstr) { sqlite3_result_error_nomem(context); return; }
 
-    sqlite3_result_error(context, strmsg, msgsize);
+    sqlite3_result_error16(context, msgstr, msglength * sizeof(jchar));
 
-    (*env)->ReleaseStringUTFChars(env, msg, strmsg);
+    (*env)->ReleaseStringCritical(env, msg, msgstr);
 }
 
 /* used to call xFunc, xStep and xFinal */
@@ -422,34 +428,37 @@ JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB__1open(
     const char *str;
 
     if (db) {
-        throwexmsg(env, "DB already open");
+        throwex_msg(env, "DB already open");
+        sqlite3_close(db);
         return;
     }
 
     str = (*env)->GetStringUTFChars(env, file, 0);
     ret = sqlite3_open_v2(str, &db, flags, NULL); 
+    (*env)->ReleaseStringUTFChars(env, file, str);
+
     if (ret) {
-        throw_errorcode(env, this, ret);
+        throwex_errorcode(env, this, ret);
         sqlite3_close(db);
         return;
     }
-    (*env)->ReleaseStringUTFChars(env, file, str);
 
     sethandle(env, this, db);
 }
 
 JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_init_1spatialite_1ex(
-        JNIEnv *env, jobject this, jboolean verbose)
+            JNIEnv *env, jobject this, jboolean verbose)
 {
     sqlite3 *handle = gethandle(env, this);
     if (!handle) {
-        throwexmsg(env, "No database handle!");
+        throwex_msg(env, "No database handle!");
         return 0;
     }
     SpatialiteCacheNode *n = allocSpatialiteCacheForHandle(handle);
     spatialite_init_ex(handle, n->spatialiteCache, verbose ? 1 : 0);
     return 1;
 }
+
 
 JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB__1close(
         JNIEnv *env, jobject this)
@@ -461,65 +470,65 @@ JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB__1close(
         sethandle(env, this, 0);
     }
     else {
-        // Wait while busy for some attempts, and close any prepared statements
-        int retry = 0;
-        int didFinalizeOpenStatements = 0;
-        int numberOfRetries = 0;
-        int busyRetryTimeout = 100;
-        int shouldFinalizeOpenStatements = 1;
-        do
-        {
-            retry   = 0;
-            err     = sqlite3_close(handle);
-            // The db is busy or locked, or there are unfinalized prepared statements
-            if (SQLITE_BUSY == err || SQLITE_LOCKED == err)
+            // Wait while busy for some attempts, and close any prepared statements
+            int retry = 0;
+            int didFinalizeOpenStatements = 0;
+            int numberOfRetries = 0;
+            int busyRetryTimeout = 100;
+            int shouldFinalizeOpenStatements = 1;
+            do
             {
-                retry = 1;
-                sqlite3_sleep(100);
-                
-                if (busyRetryTimeout && (numberOfRetries++ > busyRetryTimeout))
+                retry   = 0;
+                err     = sqlite3_close(handle);
+                // The db is busy or locked, or there are unfinalized prepared statements
+                if (SQLITE_BUSY == err || SQLITE_LOCKED == err)
                 {
-                    throwexmsg(env, "SQLite database busy or locked, tried 100 times but still unable to close");
-                    return;
-                }
-                if (shouldFinalizeOpenStatements)
-                {
-                    shouldFinalizeOpenStatements = 0;
-                    sqlite3_stmt *pStmt;
-                    while ((pStmt = sqlite3_next_stmt(handle, 0x00)) != 0)
+                    retry = 1;
+                    sqlite3_sleep(100);
+                    
+                    if (busyRetryTimeout && (numberOfRetries++ > busyRetryTimeout))
                     {
-                        didFinalizeOpenStatements = 1;
-                        printf("Warning: Closing leaked statement for SQL: %s \n", sqlite3_sql(pStmt));
-                        err = sqlite3_finalize(pStmt);
-                        if (SQLITE_BUSY == err || SQLITE_LOCKED == err)
+                        throwex_msg(env, "SQLite database busy or locked, tried 100 times but still unable to close");
+                        return;
+                    }
+                    if (shouldFinalizeOpenStatements)
+                    {
+                        shouldFinalizeOpenStatements = 0;
+                        sqlite3_stmt *pStmt;
+                        while ((pStmt = sqlite3_next_stmt(handle, 0x00)) != 0)
                         {
-                            // Something interferred again - let's do another round
-                            shouldFinalizeOpenStatements = 1;
-                            break;
+                            didFinalizeOpenStatements = 1;
+                            printf("Warning: Closing leaked statement for SQL: %s \n", sqlite3_sql(pStmt));
+                            err = sqlite3_finalize(pStmt);
+                            if (SQLITE_BUSY == err || SQLITE_LOCKED == err)
+                            {
+                                // Something interferred again - let's do another round
+                                shouldFinalizeOpenStatements = 1;
+                                break;
+                            }
                         }
                     }
                 }
-            }
-            // Any other irrecoverable error occurred (quite rare event)
-            else if (SQLITE_OK != err)
-            {
-                char str[256];
-                sprintf(str, "Unhandled SQLite error %d occurred while trying to close database", err);
-                throwexmsg(env, str);
-                return;
-            }
-        }
-        while (retry);
+                // Any other irrecoverable error occurred (quite rare event)
+                else if (SQLITE_OK != err)
+                {
+                    char str[256];
+                    sprintf(str, "Unhandled SQLite error %d occurred while trying to close database", err);
+                    throwex_msg(env, str);
+                    return;
+                }
+        } while (retry);
         
         if (didFinalizeOpenStatements) {
-            throwexmsg(env, "Database was closed while there were open SQLite3 statements. All statements have been \
-                       finalized and the db was closed successfully. But you should fix your code to finalize these statements, \
-                       crashes and data loss are likely otherwise. See above which SQL statements are affected. ");
+                    throwex_msg(env, "Database was closed while there were open SQLite3 statements. All statements have been \
+                        finalized and the db was closed successfully. But you should fix your code to finalize these statements, \
+                        crashes and data loss are likely otherwise. See above which SQL statements are affected. ");
         }
-        
+    
         clearSpatialiteCacheForHandle(gethandle(env, this));
         sethandle(env, this, 0);
     }
+
 }
 
 JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB_interrupt(JNIEnv *env, jobject this)
@@ -539,12 +548,15 @@ JNIEXPORT jlong JNICALL Java_org_spatialite_core_NativeDB_prepare(
     sqlite3* db = gethandle(env, this);
     sqlite3_stmt* stmt;
 
-    const char *strsql = (*env)->GetStringUTFChars(env, sql, 0);
-    int status = sqlite3_prepare_v2(db, strsql, -1, &stmt, 0);
-    (*env)->ReleaseStringUTFChars(env, sql, strsql);
+    jsize sqllength = (*env)->GetStringLength(env, sql);
+    const jchar *sqlstr = (*env)->GetStringCritical(env, sql, 0);
+    if (!sqlstr) { throwex_outofmemory(env); return fromref(0); }
+
+    int status = sqlite3_prepare16_v2(db, sqlstr, sqllength * sizeof(jchar), &stmt, 0);
+    (*env)->ReleaseStringCritical(env, sql, sqlstr);
 
     if (status != SQLITE_OK) {
-        throw_errorcode(env, this, status);
+        throwex_errorcode(env, this, status);
         return fromref(0);
     }
     return fromref(stmt);
@@ -554,25 +566,79 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB__1exec(
         JNIEnv *env, jobject this, jstring sql)
 {
     sqlite3* db = gethandle(env, this);
-    const char *strsql;
-    char* errorMsg;
-    int status;
-	
-	if(!db)
-	{
-		throw_errorcode(env, this, 21);
-		return 21;
-	}
+    sqlite3_stmt* stmt = 0;
+    jsize sqllength;
+    const jchar *sqlstr;
+    const jchar *sqlstrend;
+    const jchar *sqlstrstmt;
+    const jchar *leftover;    // Tail of unprocessed SQL
+    int status = SQLITE_OK;
 
-    strsql = (*env)->GetStringUTFChars(env, sql, 0);
-    status = sqlite3_exec(db, strsql, 0, 0, &errorMsg);
-    
-    (*env)->ReleaseStringUTFChars(env, sql, strsql);
-
-    if (status != SQLITE_OK) {
-        throwexmsg(env, errorMsg);
-        sqlite3_free(errorMsg);
+    if (!db)
+    {
+        throwex_errorcode(env, this, SQLITE_MISUSE);
+        return SQLITE_MISUSE;
     }
+
+    sqllength = (*env)->GetStringLength(env, sql);
+
+    // Do not use GetStringCritical() here, because SQLite may call
+    // Java methods while evaluating the SQL query
+    sqlstr = (*env)->GetStringChars(env, sql, 0);
+    if (!sqlstr) { throwex_outofmemory(env); return 0; }
+
+    sqlstrstmt = sqlstr;
+    sqlstrend = sqlstr + sqllength;
+
+    while (status == SQLITE_OK && sqlstrstmt && sqlstrstmt < sqlstrend)
+    {
+        status = sqlite3_prepare16_v2(db, sqlstrstmt, (sqlstrend - sqlstrstmt) * sizeof(jchar),
+                &stmt, (const void**)&leftover);
+        if (status != SQLITE_OK)
+        {
+            continue;
+        }
+
+        if (!stmt)
+        {
+            // this happens for a comment or white-space
+            sqlstrstmt = leftover;
+            continue;
+        }
+
+        while (1)
+        {
+            status = sqlite3_step(stmt);
+
+            if (status != SQLITE_ROW)
+            {
+                status = sqlite3_finalize(stmt);
+                stmt = 0;
+                sqlstrstmt = leftover;
+
+                while ( sqlstrstmt && sqlstrstmt < sqlstrend
+                        && (*sqlstrstmt == ' ' || *sqlstrstmt == '\t' || *sqlstrstmt == '\n'
+                            || *sqlstrstmt == '\v' || *sqlstrstmt == '\f' || *sqlstrstmt == '\r' ))
+                {
+                    sqlstrstmt++;
+                }
+                break;
+            }
+        }
+    }
+
+    (*env)->ReleaseStringChars(env, sql, sqlstr);
+
+    if (stmt)
+    {
+        sqlite3_finalize(stmt);
+    }
+
+    if (status != SQLITE_OK)
+    {
+        throwex_errorcode(env, this, status);
+    }
+
     return status;
 }
 
@@ -580,7 +646,8 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB__1exec(
 
 JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_errmsg(JNIEnv *env, jobject this)
 {
-    return (*env)->NewStringUTF(env, sqlite3_errmsg(gethandle(env, this)));
+    const jchar *str = (const jchar*) sqlite3_errmsg16(gethandle(env, this));
+    return str ? (*env)->NewString(env, str, jstrlen(str)) : NULL;
 }
 
 JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_libversion(
@@ -646,8 +713,8 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_column_1type(
 JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_column_1decltype(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    const char *str = sqlite3_column_decltype(toref(stmt), col);
-    return (*env)->NewStringUTF(env, str);
+    const jchar *str = (const jchar*) sqlite3_column_decltype16(toref(stmt), col);
+    return str ? (*env)->NewString(env, str, jstrlen(str)) : NULL;
 }
 
 JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_column_1table_1name(
@@ -667,8 +734,12 @@ JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_column_1name(
 JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_column_1text(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    return (*env)->NewStringUTF(
-        env, (const char*)sqlite3_column_text(toref(stmt), col));
+    const jchar *str = 0;
+    jint strlength = 0;
+
+    str = (const jchar*) sqlite3_column_text16(toref(stmt), col);
+    strlength = sqlite3_column_bytes16(toref(stmt), col) / sizeof(jchar);
+    return str ? (*env)->NewString(env, str, strlength) : NULL;
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_spatialite_core_NativeDB_column_1blob(
@@ -682,7 +753,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_spatialite_core_NativeDB_column_1blob(
 
     length = sqlite3_column_bytes(toref(stmt), col);
     jBlob = (*env)->NewByteArray(env, length);
-    assert(jBlob); // out-of-memory
+    if (!jBlob) { throwex_outofmemory(env); return 0; }
 
     a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
     memcpy(a, blob, length);
@@ -736,9 +807,11 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_bind_1double(
 JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring v)
 {
-    const char *chars = (*env)->GetStringUTFChars(env, v, 0);
-    int rc = sqlite3_bind_text(toref(stmt), pos, chars, -1, SQLITE_TRANSIENT);
-    (*env)->ReleaseStringUTFChars(env, v, chars);
+    jsize vlength = (*env)->GetStringLength(env, v);
+    const jchar *vstr = (*env)->GetStringCritical(env, v, 0);
+    if (!vstr) { throwex_outofmemory(env); return 0; }
+    int rc = sqlite3_bind_text16(toref(stmt), pos, vstr, vlength * sizeof(jchar), SQLITE_TRANSIENT);
+    (*env)->ReleaseStringCritical(env, v, vstr);
     return rc;
 }
 
@@ -748,7 +821,8 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_bind_1blob(
     jint rc;
     void *a;
     jsize size = (*env)->GetArrayLength(env, v);
-    assert(a = (*env)->GetPrimitiveArrayCritical(env, v, 0));
+    a = (*env)->GetPrimitiveArrayCritical(env, v, 0);
+    if (!a) { throwex_outofmemory(env); return 0; }
     rc = sqlite3_bind_blob(toref(stmt), pos, a, size, SQLITE_TRANSIENT);
     (*env)->ReleasePrimitiveArrayCritical(env, v, a, JNI_ABORT);
     return rc;
@@ -763,16 +837,16 @@ JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB_result_1null(
 JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB_result_1text(
         JNIEnv *env, jobject this, jlong context, jstring value)
 {
-    const jchar *str;
-    jsize size;
+    const jchar *valuestr;
+    jsize valuelength;
 
     if (value == NULL) { sqlite3_result_null(toref(context)); return; }
-    size = (*env)->GetStringLength(env, value) * 2;
 
-    str = (*env)->GetStringCritical(env, value, 0);
-    assert(str); // out-of-memory
-    sqlite3_result_text16(toref(context), str, size, SQLITE_TRANSIENT);
-    (*env)->ReleaseStringCritical(env, value, str);
+    valuelength = (*env)->GetStringLength(env, value);
+    valuestr = (*env)->GetStringCritical(env, value, 0);
+    if (!valuestr) { throwex_outofmemory(env); return; }
+    sqlite3_result_text16(toref(context), valuestr, valuelength * sizeof(jchar), SQLITE_TRANSIENT);
+    (*env)->ReleaseStringCritical(env, value, valuestr);
 }
 
 JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB_result_1blob(
@@ -782,11 +856,10 @@ JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB_result_1blob(
     jsize size;
 
     if (value == NULL) { sqlite3_result_null(toref(context)); return; }
-    size = (*env)->GetArrayLength(env, value);
 
-    // be careful with *Critical
+    size = (*env)->GetArrayLength(env, value);
     bytes = (*env)->GetPrimitiveArrayCritical(env, value, 0);
-    assert(bytes); // out-of-memory
+    if (!bytes) { throwex_outofmemory(env); return; }
     sqlite3_result_blob(toref(context), bytes, size, SQLITE_TRANSIENT);
     (*env)->ReleasePrimitiveArrayCritical(env, value, bytes, JNI_ABORT);
 }
@@ -815,14 +888,14 @@ JNIEXPORT void JNICALL Java_org_spatialite_core_NativeDB_result_1int(
 JNIEXPORT jstring JNICALL Java_org_spatialite_core_NativeDB_value_1text(
         JNIEnv *env, jobject this, jobject f, jint arg)
 {
-    jint length = 0;
     const void *str = 0;
+    jint strlength = 0;
     sqlite3_value *value = tovalue(env, f, arg);
     if (!value) return NULL;
 
-    length = sqlite3_value_bytes16(value) / 2; // in jchars
     str = sqlite3_value_text16(value);
-    return str ? (*env)->NewString(env, str, length) : NULL;
+    strlength = sqlite3_value_bytes16(value) / sizeof(jchar);
+    return str ? (*env)->NewString(env, str, strlength) : NULL;
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_spatialite_core_NativeDB_value_1blob(
@@ -840,7 +913,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_spatialite_core_NativeDB_value_1blob(
 
     length = sqlite3_value_bytes(value);
     jBlob = (*env)->NewByteArray(env, length);
-    assert(jBlob); // out-of-memory
+    if (!jBlob) { throwex_outofmemory(env); return 0; }
 
     a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
     memcpy(a, blob, length);
@@ -887,7 +960,7 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_create_1function(
     static jfieldID udfdatalist = 0;
     struct UDFData *udf = malloc(sizeof(struct UDFData));
 
-    assert(udf); // out-of-memory
+    if (!udf) { throwex_outofmemory(env); return 0; }
 
     if (!udfdatalist)
         udfdatalist = (*env)->GetFieldID(env, dbclass, "udfdatalist", "J");
@@ -901,7 +974,7 @@ JNIEXPORT jint JNICALL Java_org_spatialite_core_NativeDB_create_1function(
     (*env)->SetLongField(env, this, udfdatalist, fromref(udf));
 
     strname = (*env)->GetStringUTFChars(env, name, 0);
-    assert(strname); // out-of-memory
+    if (!strname) { throwex_outofmemory(env); return 0; }
 
     ret = sqlite3_create_function(
             gethandle(env, this),
@@ -973,10 +1046,10 @@ JNIEXPORT jobjectArray JNICALL Java_org_spatialite_core_NativeDB_column_1metadat
     colCount = sqlite3_column_count(dbstmt);
     array = (*env)->NewObjectArray(
         env, colCount, (*env)->FindClass(env, "[Z"), NULL) ;
-    assert(array); // out-of-memory
+    if (!array) { throwex_outofmemory(env); return 0; }
 
     colDataRaw = (jboolean*)malloc(3 * sizeof(jboolean));
-    assert(colDataRaw); // out-of-memory
+    if (!colDataRaw) { throwex_outofmemory(env); return 0; }
 
     for (i = 0; i < colCount; i++) {
         // load passed column name and table name
@@ -1001,7 +1074,7 @@ JNIEXPORT jobjectArray JNICALL Java_org_spatialite_core_NativeDB_column_1metadat
         colDataRaw[2] = pAutoinc;
 
         colData = (*env)->NewBooleanArray(env, 3);
-        assert(colData); // out-of-memory
+        if (!colData) { throwex_outofmemory(env); return 0; }
 
         (*env)->SetBooleanArrayRegion(env, colData, 0, 3, colDataRaw);
         (*env)->SetObjectArrayElement(env, array, i, colData);

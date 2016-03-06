@@ -67,6 +67,24 @@ public class SQLiteJDBCLoader {
     }
 
     /**
+     * @return True if the SQLite JDBC driver is set to pure Java mode; false otherwise.
+     * @deprecated Pure Java no longer supported
+     */
+    static boolean getPureJavaFlag() {
+        return Boolean.parseBoolean(System.getProperty("spatialite.purejava", "false"));
+    }
+
+    /**
+     * Checks if the SQLite JDBC driver is set to pure Java mode.
+     *
+     * @return True if the SQLite JDBC driver is set to pure Java mode; false otherwise.
+     * @deprecated Pure Java nolonger supported
+     */
+    public static boolean isPureJavaMode() {
+        return false;
+    }
+
+    /**
      * Checks if the SQLite JDBC driver is set to native mode.
      *
      * @return True if the SQLite JDBC driver is set to native Java mode; false otherwise.

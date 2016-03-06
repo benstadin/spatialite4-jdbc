@@ -18,9 +18,9 @@ OSINFO_CLASS := org.spatialite.util.OSInfo
 OSINFO_PROG := lib/org/spatialite/util/OSInfo.class
 
 ## building OSInfo.java 
-#$(info compiling OSInfo.java)
-#$(shell mkdir -p lib)
-#$(shell $(JAVAC) src/main/java/org/spatialite/OSInfo.java -d lib)
+$(info compiling OSInfo.java)
+$(shell mkdir -p lib)
+$(shell $(JAVAC) src/main/java/org/spatialite/util/OSInfo.java -d lib)
 
 OS_NAME := $(shell $(JAVA) -cp lib $(OSINFO_CLASS) --os)
 OS_ARCH := $(shell $(JAVA) -cp lib $(OSINFO_CLASS) --arch)

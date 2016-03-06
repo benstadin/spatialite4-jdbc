@@ -17,9 +17,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.spatialite.date.FastDateFormat;
+
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class QueryTest
@@ -74,7 +76,7 @@ public class QueryTest
         conn.createStatement().execute("create table sample (start_time datetime)");
 
         Date now = new Date();
-        String date = new SimpleDateFormat(SQLiteConfig.DEFAULT_DATE_STRING_FORMAT).format(now);
+        String date = FastDateFormat.getInstance(SQLiteConfig.DEFAULT_DATE_STRING_FORMAT).format(now);
 
         conn.createStatement().execute("insert into sample values(" + now.getTime() + ")");
         conn.createStatement().execute("insert into sample values('" + date + "')");

@@ -2,6 +2,7 @@ package org.spatialite;
 
 import static org.junit.Assert.*;
 
+import java.lang.reflect.Method;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -15,6 +16,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.spatialite.core.CoreConnection;
+import org.spatialite.jdbc3.JDBC3Statement;
+import org.spatialite.jdbc4.JDBC4Statement;
 
 /** These tests are designed to stress Statements on memory databases. */
 public class StatementTest
@@ -416,13 +420,52 @@ public class StatementTest
         rs.close();
     }
 
-    @Test 
+    @Test
     public void setEscapeProcessingToFals() throws SQLException {
         stat.setEscapeProcessing(false);
     }
 
-    @Test(expected=SQLException.class) 
+    @Test(expected=SQLException.class)
     public void setEscapeProcessingToTrue() throws SQLException {
         stat.setEscapeProcessing(true);
     }
+
+    @Test
+    public void unwrapTest() throws SQLException {
+        assertTrue( conn.isWrapperFor(Connection.class) );
+        assertFalse( conn.isWrapperFor(Statement.class) );
+        assertEquals( conn, conn.unwrap(Connection.class) );
+        assertEquals( conn, conn.unwrap(CoreConnection.class) );
+
+        assertTrue( stat.isWrapperFor(Statement.class) );
+        assertEquals( stat, stat.unwrap(Statement.class) );
+        assertEquals( stat, stat.unwrap(JDBC3Statement.class) );
+
+        ResultSet rs = stat.executeQuery("select 1");
+
+        assertTrue( rs.isWrapperFor(ResultSet.class) );
+        assertEquals( rs, rs.unwrap(ResultSet.class) );
+
+        rs.close();
+    }
+
+    @Test
+    public void closeOnCompletionTest() throws Exception {
+        if ( ! (stat instanceof JDBC4Statement) )
+            return;
+
+        // Run the following code only for JDK7 or higher
+        Method mIsCloseOnCompletion = JDBC4Statement.class.getDeclaredMethod("isCloseOnCompletion");
+        Method mCloseOnCompletion = JDBC4Statement.class.getDeclaredMethod("closeOnCompletion");
+        assertFalse((Boolean) mIsCloseOnCompletion.invoke(stat));
+
+        mCloseOnCompletion.invoke(stat);
+        assertTrue((Boolean) mIsCloseOnCompletion.invoke(stat));
+
+        ResultSet rs = stat.executeQuery("select 1");
+        rs.close();
+
+        assertTrue( stat.isClosed() );
+    }
+
 }

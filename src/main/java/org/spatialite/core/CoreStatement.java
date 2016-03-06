@@ -65,16 +65,19 @@ public abstract class CoreStatement implements Codes
      */
     protected boolean exec() throws SQLException {
         if (sql == null)
-            throw new SQLException("spatialite internal error: sql==null");
+            throw new SQLException("SpatialiteJDBC internal error: sql==null");
         if (rs.isOpen())
-            throw new SQLException("spatialite JDBC internal error: rs.isOpen() on exec.");
+            throw new SQLException("Spatialite JDBC internal error: rs.isOpen() on exec.");
 
+        boolean success = false;
         boolean rc = false;
         try {
             rc = db.execute(this, null);
+            success = true;
         }
         finally {
             resultsWaiting = rc;
+            if (!success) db.finalize(this);
         }
 
         return db.column_count(pointer) != 0;
@@ -89,16 +92,19 @@ public abstract class CoreStatement implements Codes
      */
     protected boolean exec(String sql) throws SQLException {
         if (sql == null)
-            throw new SQLException("spatialite internal error: sql==null");
+            throw new SQLException("SpatialiteJDBC internal error: sql==null");
         if (rs.isOpen())
-            throw new SQLException("spatialite internal error: rs.isOpen() on exec.");
+            throw new SQLException("Spatialite JDBC internal error: rs.isOpen() on exec.");
 
         boolean rc = false;
+        boolean success = false;
         try {
             rc = db.execute(sql);
+            success = true;
         }
         finally {
             resultsWaiting = rc;
+            if (!success) db.finalize(this);
         }
 
         return db.column_count(pointer) != 0;

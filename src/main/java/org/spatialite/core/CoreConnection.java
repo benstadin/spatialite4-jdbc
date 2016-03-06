@@ -10,13 +10,13 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.spatialite.date.FastDateFormat;
 
 import org.spatialite.SQLiteConfig;
 import org.spatialite.SQLiteConfig.DateClass;
@@ -39,7 +39,7 @@ public abstract class CoreConnection {
     protected TransactionMode transactionMode = TransactionMode.DEFFERED;
 
     protected final static Map<TransactionMode, String> beginCommandMap =
-        new HashMap<SQLiteConfig.TransactionMode, String>();
+        new EnumMap<SQLiteConfig.TransactionMode, String>(SQLiteConfig.TransactionMode.class);
 
     private final static Set<String> pragmaSet = new TreeSet<String>();
     static {
@@ -56,7 +56,8 @@ public abstract class CoreConnection {
     public final DateClass dateClass;
     public final DatePrecision datePrecision; //Calendar.SECOND or Calendar.MILLISECOND
     public final long dateMultiplier;
-    public final DateFormat dateFormat;
+    public final FastDateFormat dateFormat;
+    public final String dateStringFormat;
 
     protected CoreConnection(String url, String fileName, Properties prop) throws SQLException
     {
@@ -66,7 +67,8 @@ public abstract class CoreConnection {
         SQLiteConfig config = new SQLiteConfig(prop);
         this.dateClass = config.dateClass;
         this.dateMultiplier = config.dateMultiplier;
-        this.dateFormat = new SimpleDateFormat(config.dateStringFormat);
+        this.dateFormat = FastDateFormat.getInstance(config.dateStringFormat);
+        this.dateStringFormat = config.dateStringFormat;
         this.datePrecision = config.datePrecision;
         this.transactionMode = config.getTransactionMode();
         this.openModeFlags = config.getOpenModeFlags();
@@ -115,8 +117,8 @@ public abstract class CoreConnection {
     			continue;
     		}
 
-    		String [] kvp = parameter.toLowerCase().split("=");
-    		String key = kvp[0].trim();
+    		String [] kvp = parameter.split("=");
+    		String key = kvp[0].trim().toLowerCase();
     		if (pragmaSet.contains(key)) {
     			if (kvp.length == 1) {
     				throw new SQLException(String.format("Please specify a value for PRAGMA %s in URL %s", key, url));
@@ -255,6 +257,15 @@ public abstract class CoreConnection {
                     throw new IOException("failed to remove existing DB file: " + dbFile.getAbsolutePath());
                 }
             }
+
+            //            String md5sum1 = SQLiteJDBCLoader.md5sum(resourceAddr.openStream());
+            //            String md5sum2 = SQLiteJDBCLoader.md5sum(new FileInputStream(dbFile));
+            //
+            //            if (md5sum1.equals(md5sum2))
+            //                return dbFile; // no need to extract the DB file
+            //            else
+            //            {
+            //            }
         }
 
         byte[] buffer = new byte[8192]; // 8K buffer

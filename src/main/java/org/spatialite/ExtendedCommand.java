@@ -1,5 +1,5 @@
 //--------------------------------------
-// sqlite-jdbc Project
+// spatialite-jdbc Project
 //
 // ExtendedCommand.java
 // Since: Mar 12, 2010
@@ -29,7 +29,7 @@ public class ExtendedCommand
     }
 
     /**
-     * Parses extended commands of "backup" or "restore" for SQLite database.  
+     * Parses extended commands of "backup" or "restore" for SQLite database.
      * @param sql One of the extended commands:<br/>
      *      backup sourceDatabaseName to destinationFileName OR restore targetDatabaseName from sourceFileName
      * @return BackupCommand object if the argument is a backup command; RestoreCommand object if
