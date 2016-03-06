@@ -31,8 +31,8 @@ $(ICONV_UNPACKED): $(ICONV_ARCHIVE)
 	touch $@
 
 $(ICONV_LIB): $(ICONV_UNPACKED)
-	if [ ! -f $(ICONV_DIR)/Makefile ]; then (cd $(ICONV_DIR) && ./configure $(ICONV_CONFIG_FLAGS)); fi;	
-	(cd $(ICONV_DIR) && make)
+	if [ ! -f $(ICONV_DIR)/Makefile ]; then (cd $(ICONV_DIR) && ./configure --prefix=$(CONF_PREFIX) $(ICONV_CONFIG_FLAGS)); fi;	
+	(cd $(ICONV_DIR) && make && make install)
 
 GEOS_ARCHIVE:=$(TARGET)/geos-$(GEOS_VERSION).tar.bz2
 GEOS_UNPACKED:=$(TARGET)/geos-unpack.log
@@ -49,8 +49,8 @@ $(GEOS_UNPACKED): $(GEOS_ARCHIVE)
 	touch $@
 
 $(GEOS_LIB): $(GEOS_UNPACKED)
-	if [ ! -f $(GEOS_DIR)/Makefile ]; then (cd $(GEOS_DIR) && $(GEOS_FORCE_COMPILERS) ./configure $(GEOS_CONFIG_FLAGS)); fi;	
-	(cd $(GEOS_DIR) && make)
+	if [ ! -f $(GEOS_DIR)/Makefile ]; then (cd $(GEOS_DIR) && $(GEOS_FORCE_COMPILERS) ./configure --prefix=$(CONF_PREFIX) $(GEOS_CONFIG_FLAGS)); fi;	
+	(cd $(GEOS_DIR) && make && make install)
 
 PROJ_ARCHIVE:=$(TARGET)/proj-$(PROJ_VERSION).tar.gz
 PROJ_UNPACKED:=$(TARGET)/proj-unpack.log
@@ -66,8 +66,8 @@ $(PROJ_UNPACKED): $(PROJ_ARCHIVE)
 	touch $@
 
 $(PROJ_LIB): $(PROJ_UNPACKED)
-	if [ ! -f $(PROJ_DIR)/Makefile ]; then (cd $(PROJ_DIR) && ./configure $(PROJ_CONFIG_FLAGS)); fi;
-	(cd $(PROJ_DIR) && make)
+	if [ ! -f $(PROJ_DIR)/Makefile ]; then (cd $(PROJ_DIR) && ./configure --prefix=$(CONF_PREFIX) $(PROJ_CONFIG_FLAGS)); fi;
+	(cd $(PROJ_DIR) && make && make install)
 
 LIBXML2_ARCHIVE:=$(TARGET)/libxml2-$(LIBXML2_VERSION).tar.gz
 LIBXML2_UNPACKED:=$(TARGET)/libxml2-unpack.log
@@ -83,8 +83,8 @@ $(LIBXML2_UNPACKED): $(LIBXML2_ARCHIVE)
 	touch $@
 
 $(LIBXML2_LIB): $(LIBXML2_UNPACKED)
-	if [ ! -f $(LIBXML2_DIR)/Makefile ]; then (cd $(LIBXML2_DIR) && ./configure $(LIBXML2_CONFIG_FLAGS)); fi;
-	(cd $(LIBXML2_DIR) && make)
+	if [ ! -f $(LIBXML2_DIR)/Makefile ]; then (cd $(LIBXML2_DIR) && ./configure --prefix=$(CONF_PREFIX) $(LIBXML2_CONFIG_FLAGS)); fi;
+	(cd $(LIBXML2_DIR) && make && make install)
 
 ZLIB_ARCHIVE:=$(TARGET)/zlib-$(ZLIB_VERSION).tar.gz
 ZLIB_UNPACKED:=$(TARGET)/zlib-unpack.log
@@ -100,8 +100,8 @@ $(ZLIB_UNPACKED): $(ZLIB_ARCHIVE)
 	touch $@
 
 $(ZLIB_LIB): $(ZLIB_UNPACKED)
-	(cd $(ZLIB_DIR) && export CFLAGS='-fPIC'; export CXXFLAGS='-fPIC'; ./configure)
-	(cd $(ZLIB_DIR) && make)
+	(cd $(ZLIB_DIR) && export CFLAGS='-fPIC'; export CXXFLAGS='-fPIC'; ./configure --prefix=$(CONF_PREFIX))
+	(cd $(ZLIB_DIR) && make && make install)
 
 LZMA_ARCHIVE:=$(TARGET)/lzma-$(LZMA_VERSION).tar.gz
 LZMA_UNPACKED:=$(TARGET)/lzma-unpack.log
@@ -117,8 +117,8 @@ $(LZMA_UNPACKED): $(LZMA_ARCHIVE)
 	touch $@
 
 $(LZMA_LIB): $(LZMA_UNPACKED)
-	if [ ! -f $(LZMA_DIR)/Makefile ]; then (cd $(LZMA_DIR) && ./configure $(LZMA_CONFIG_FLAGS)); fi;
-	(cd $(LZMA_DIR) && make)
+	if [ ! -f $(LZMA_DIR)/Makefile ]; then (cd $(LZMA_DIR) && ./configure --prefix=$(CONF_PREFIX) $(LZMA_CONFIG_FLAGS)); fi;
+	(cd $(LZMA_DIR) && make && make install)
 
 SQLITE_ARCHIVE:=$(TARGET)/$(sqlite)-amal.zip
 SQLITE_UNPACKED:=$(TARGET)/sqlite-unpack.log
@@ -147,8 +147,8 @@ $(SPATIALITE_UNPACKED): $(SPATIALITE_ARCHIVE)
 	touch $@
 
 $(SPATIALITE_LIB): $(SPATIALITE_UNPACKED)
-	if [ ! -f $(SPATIALITE_DIR)/Makefile ]; then (cd $(SPATIALITE_DIR) && ./configure $(SPATIALITE_CONFIG_FLAGS)); fi;
-	(cd $(SPATIALITE_DIR) && make)
+	if [ ! -f $(SPATIALITE_DIR)/Makefile ]; then (cd $(SPATIALITE_DIR) && ./configure --prefix=$(CONF_PREFIX) $(SPATIALITE_CONFIG_FLAGS)); fi;
+	(cd $(SPATIALITE_DIR) && make && make install)
 
 CFLAGS:= -I$(ZLIB_DIR) -I$(LZMA_DIR)/src -I$(LIBXML2_DIR)/include -I$(PROJ_DIR)/src -I$(GEOS_DIR)/include -I$(ICONV_DIR)/include -I$(OUT_DIR) -I$(SQLITE_AMAL_DIR) -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(CFLAGS)
 

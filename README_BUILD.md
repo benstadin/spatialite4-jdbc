@@ -14,6 +14,9 @@ Build
 ----- 
 1. Edit the `VERSION` file and set the SQLite version to use.
 2. Edit the version number in `pom.xml` to match `VERSION`.
+3. Create a local build envirnonment by running:
+
+		$ ./create_env.sh
 3. Then, run:
 
         $ make

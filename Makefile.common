@@ -1,3 +1,6 @@
+MKFILE_PATH := $(shell pwd)
+CONF_PREFIX := $(MKFILE_PATH)/local
+
 include VERSION
 
 ifndef JAVA_HOME
@@ -153,19 +156,20 @@ endif
 #OS X build flags: http://www.kyngchaos.com/macosx/build/geos
 
 PROJ_CONFIG_FLAGS = --with-pic
-LIBXML2_CONFIG_FLAGS = --with-pic
 LZMA_CONFIG_FLAGS = --with-pic
 ICONV_CONFIG_FLAGS = --with-pic --enable-static
  
 SPATIALITE_CONFIG_FLAGS = --with-pic --enable-freexl=no --enable-proj=yes --enable-geos=yes --enable-lwgeom=no
-SPATIALITE_FLAGS = $(SPATIALITE_DIR)/src/.libs/libspatialite.a $(GEOS_DIR)/capi/.libs/libgeos_c.a $(GEOS_DIR)/src/.libs/libgeos.a $(PROJ_DIR)/src/.libs/libproj.a $(LIBXML2_DIR)/.libs/libxml2.a $(ZLIB_DIR)/libz.a $(LZMA_DIR)/src/sdk/7zip/Compress/LZMA/libLZMA.a $(ICONV_DIR)/lib/.libs/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
+SPATIALITE_FLAGS = -I$(SPATIALITE_DIR)/src/headers -I$(SPATIALITE_DIR)/src/include $(SPATIALITE_DIR)/src/.libs/libspatialite.a $(GEOS_DIR)/capi/.libs/libgeos_c.a $(GEOS_DIR)/src/.libs/libgeos.a $(PROJ_DIR)/src/.libs/libproj.a $(LIBXML2_DIR)/.libs/libxml2.a $(ZLIB_DIR)/libz.a $(LZMA_DIR)/src/sdk/7zip/Compress/LZMA/libLZMA.a $(ICONV_DIR)/lib/.libs/libiconv.a $(SPATIALITE_DIR)/src/virtualtext/.libs/libvirtualtext.a -lstdc++
 
 # Note: GEOS is picky about the compiler, at least on OS X. We force to use clang on OS X to make it work, otherwise it's configure script will fail.
 ifeq ($(OS_NAME),Windows)
     NATIVE_DLL = win32
+	LIBXML2_CONFIG_FLAGS = --with-pic --without-lzma --without-python
     GEOS_CONFIG_FLAGS = --with-pic
     GEOS_FORCE_COMPILERS = 
 else ifeq ($(OS_NAME),Linux)
+	LIBXML2_CONFIG_FLAGS = --without-lzma --without-python
 	NEED_ICONV_GLIBC_PATCH=true
 	GEOS_CONFIG_FLAGS = --with-pic
 	GEOS_FORCE_COMPILERS = 
@@ -177,6 +181,7 @@ else ifeq ($(OS_NAME),Linux)
         NATIVE_DLL = linux32
     endif
 else ifeq ($(OS_NAME),Mac)
+	LIBXML2_CONFIG_FLAGS = --with-pic --without-lzma --without-python
 	GEOS_CONFIG_FLAGS = --with-pic --disable-dependency-tracking CFLAGS="-Os -arch i386 -arch x86_64" CXXFLAGS="-Os -arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"
     ifeq ($(target),Mac-x86_64)
         NATIVE_DLL = mac64
